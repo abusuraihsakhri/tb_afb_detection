@@ -1,0 +1,10 @@
+names:
+  0: AFB_Definite
+  1: AFB_Probable
+  2: AFB_Possible
+  3: Debris
+  4: RBC
+nc: 5
+path: ../01_DATA/processed_tiles
+train: train/images
+val: val/images

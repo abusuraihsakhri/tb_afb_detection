@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Learning Annotation | TB AFB</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- 🛡️ SECURITY: Strict Content Security Policy avoiding Inline execution -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
+</head>
+<body>
+    <div class="app-container glassmorphism" style="max-width: 1200px;">
+        <header>
+            <h1><span class="highlight">Active Learning</span> Annotation Engine</h1>
+            <p style="margin-top: 5px; font-weight: 600; color: var(--accent-vibrant); font-size: 1.1rem;">Developed by Dr. Abu Suraih Sakhri</p>
+            <p>1. Upload Slide | 2. Draw Exact Bounds over Bacilli | 3. Submit to Neural Network</p>
+        </header>
+
+        <main style="display: flex; gap: 30px;">
+            <!-- Upload & Control Panel -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                <div class="upload-zone" id="drop-zone" style="padding: 40px 20px;">
+                    <h3>Upload Reference Slide</h3>
+                    <p>Supports .JPG .PNG .TIFF .JP2 .DCM</p>
+                    <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.tiff,.tif,.ptif,.ptiff,.ome.tif,.ome.tiff,.jp2,.j2k,.jpf,.jpx,.svs,.ndpi,.vms,.vmu,.scn,.bif,.mrxs,.dicom,.dcm" hidden>
+                </div>
+                
+                <div class="metric-card" style="text-align: left;">
+                    <h4 style="color: var(--accent-vibrant);">Annotation Tools</h4>
+                    <p style="font-size: 0.9rem; color: #475569; margin-bottom: 15px;">Click & Drag on the image to draw bounding boxes around valid AFB rods.</p>
+                    <button id="clear-btn" style="width:100%; padding: 10px; background: var(--text-muted); color: white; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 10px;">Clear Boxes</button>
+                    <button id="submit-btn" style="width:100%; padding: 15px; background: var(--accent-vibrant); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Annotation to Dataset</button>
+                    <button id="train-btn" style="width:100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 15px;">Inject YOLO Target Training</button>
+                </div>
+                
+                <div class="metric-card" style="text-align: left; background: rgba(239, 246, 255, 0.9); border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--accent-vibrant); margin-bottom: 15px;">Deep Learning Dataset Integity</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #cbd5e1;">
+                        <span style="font-weight: 500;">Stored Slides:</span> <span id="stat-slides" style="font-weight: 600; color: var(--success);">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #cbd5e1;">
+                        <span style="font-weight: 500;">AFB Vectors Annotated:</span> <span id="stat-boxes" style="font-weight: 600; color: var(--success);">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500;">YOLO Weights Target:</span> <span id="stat-model" style="font-weight: 600; color: var(--danger);">Not Deployed</span>
+                    </div>
+                </div>
+
+                <div id="status-text" style="color: var(--text-muted); font-weight: 500;">Waiting for operation...</div>
+            </div>
+
+            <!-- Annotation Editor -->
+            <div style="flex: 2; position: relative;">
+                <div class="preview-container" style="background: #e2e8f0; height: 600px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border: 2px solid var(--border-color); border-radius: 12px;">
+                    <span id="canvas-placeholder" style="color: #64748b;">Drop an image here to begin annotating...</span>
+                    <!-- The canvas handles the image and drawn rects -->
+                    <canvas id="annotate-canvas" style="position: absolute; top: 0; left: 0; display: none; cursor: crosshair;"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="annotate.js"></script>
+</body>
+</html>

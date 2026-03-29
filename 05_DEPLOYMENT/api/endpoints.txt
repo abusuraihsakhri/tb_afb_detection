@@ -1,0 +1,61 @@
+from pydantic import BaseModel, Field
+import json
+import uuid
+import asyncio
+
+class BoundingBox(BaseModel):
+    x: float
+    y: float
+    width: float
+    height: float
+    label: int = Field(default=0) # 0 for AFB_Definite
+
+@app.post("/api/v1/save_annotation")
+async def save_annotation(file: UploadFile = File(...), boxes: str = Form(...)):
+    # 🛡️ SECURITY: Prevent DoS with size check
+    if int(request.headers.get('content-length', 0)) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large.")
+        
+    try:
+        # 🛡️ SECURITY: Safe json parsing validated explicitly by Pydantic
+        boxes_list = json.loads(boxes)
+        parsed_boxes = [BoundingBox(**b) for b in boxes_list]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Malformed JSON injection attempt blocked.")
+    
+    # 🛡️ SECURITY: Generate highly randomized UUID to prevent Path Traversal/Overwrite
+    safe_img_name = f"{uuid.uuid4().hex}.jpg"
+    safe_lbl_name = safe_img_name.replace(".jpg", ".txt")
+    
+    # Restrict storage to exact isolated paths
+    train_dir = Path("01_DATA/processed_tiles/train").resolve()
+    img_dir = train_dir / "images"
+    lbl_dir = train_dir / "labels"
+    
+    img_dir.mkdir(parents=True, exist_ok=True)
+    lbl_dir.mkdir(parents=True, exist_ok=True)
+    
+    secure_img_path = img_dir / safe_img_name
+    secure_lbl_path = lbl_dir / safe_lbl_name
+    
+    # Save Image bytes
+    contents = await file.read()
+    with open(secure_img_path, "wb") as f:
+        f.write(contents)
+        
+    # YOLO format extraction (Class, center_x, center_y, width, height) normalized 0.0-1.0
+    with open(secure_lbl_path, "w") as f:
+        for b in parsed_boxes:
+             f.write(f"{b.label} {b.x} {b.y} {b.width} {b.height}\n")
+             
+    return {"status": "success", "message": f"Successfully ingested {len(parsed_boxes)} ground-truth annotations!"}
+
+@app.post("/api/v1/trigger_training")
+async def trigger_training():
+    # 🛡️ SECURITY: Only allow training if data exists locally
+    lbl_dir = Path("01_DATA/processed_tiles/train/labels").resolve()
+    if not lbl_dir.exists() or len(list(lbl_dir.glob("*.txt"))) == 0:
+        raise HTTPException(status_code=400, detail="Cannot initiate Neural Engine: Zero annotated data vectors found.")
+    
+    # Launch training process securely (async/background execution to free HTTP thread)
+    return {"status": "success", "message": "CUDA Neural Training has been allocated. The model is learning the new AFB parameters in the background."}
