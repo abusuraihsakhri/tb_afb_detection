@@ -8,7 +8,6 @@ src_dir = current_dir.parent / "src"
 sys.path.append(str(src_dir))
 
 from tb_afb.inference.sliding_window import SlidingWindowInference
-from tb_afb.inference.who_grader import WHOGrader
 from tb_afb.models.yolo_detector import YOLOAFBDetector
 from tb_afb.utils.paths import resolve_within
 
@@ -21,15 +20,9 @@ def load_model(checkpoint_path: Path) -> YOLOAFBDetector:
 
 def main():
     parser = argparse.ArgumentParser(description="TB-AFB research inference")
-    parser.add_argument("--model", type=Path, required=True, help="Path to a .pt checkpoint.")
+    parser.add_argument("--model", type=Path, required=True, help="Path to an AFB-trained .pt checkpoint.")
     parser.add_argument("--wsi", required=True, help="Slide path within 01_DATA.")
     parser.add_argument("--conf", type=float, default=0.25, help="Model score threshold.")
-    parser.add_argument(
-        "--fields-examined",
-        type=int,
-        default=None,
-        help="Optional actual microscopy field count for smear grading; detector tiles are not HPFs.",
-    )
     args = parser.parse_args()
 
     root_dir = Path(__file__).resolve().parents[2]
@@ -52,18 +45,13 @@ def main():
         print(f"Candidate detections : {results['total_detections']}")
         print(f"Processing time      : {results['processing_time']:.2f} seconds")
         print(f"Tiles processed      : {results['tiles_processed']}")
-
-        if args.fields_examined is not None:
-            clinical_report = WHOGrader().calculate_grade(
-                results["total_detections"],
-                fields_examined=args.fields_examined,
-            )
-            print(f"Smear grade          : {clinical_report['report_string']}")
-            print(f"Grading basis        : {clinical_report['reason']}")
-        else:
-            print("Smear grade          : Not calculated (actual examined-field count required)")
+        print("Smear grade          : Not calculated")
         print("-" * 50)
-        print("Research-use output; candidate detections require human review.\n")
+        print(
+            "Candidate detections are model outputs, not confirmed AFB counts. "
+            "WHO/IUATLD smear grading requires an appropriate microscopy field-count "
+            "protocol and confirmed counts.\n"
+        )
 
     except Exception as exc:
         print(f"\n[ERROR] {exc}", file=sys.stderr)
