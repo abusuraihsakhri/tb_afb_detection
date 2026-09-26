@@ -1,96 +1,91 @@
-import os
+import sys
 from pathlib import Path
 
-def print_kpi(name, status, detail=""):
+current_dir = Path(__file__).resolve().parent
+src_dir = current_dir.parent / "src"
+sys.path.append(str(src_dir))
+
+from tb_afb.data.integrity import dataset_is_valid, inspect_yolo_dataset
+
+
+def print_kpi(name: str, status: bool, detail: str = "") -> None:
     color = "\033[92m[PASS]\033[0m" if status else "\033[91m[FAIL]\033[0m"
-    print(f"{color} {name:<40} {detail}")
+    print(f"{color} {name:<36} {detail}")
 
-def check_data_integrity():
+
+def _print_split_result(split: str, result: dict) -> None:
+    prefix = split.upper()
+    print_kpi(
+        f"{prefix} directory structure",
+        result["structure_ok"],
+        f"images={result['images']} labels={result['labels']}",
+    )
+
+    pairing_ok = result["orphaned_images"] == 0 and result["orphaned_labels"] == 0
+    print_kpi(
+        f"{prefix} image-label pairing",
+        pairing_ok,
+        (
+            f"orphaned_images={result['orphaned_images']} "
+            f"orphaned_labels={result['orphaned_labels']}"
+        ),
+    )
+
+    print_kpi(
+        f"{prefix} image file size",
+        result["zero_byte_images"] == 0,
+        f"zero_byte_images={result['zero_byte_images']}",
+    )
+
+    label_issues = (
+        result["malformed"]
+        + result["invalid_class"]
+        + result["invalid_size"]
+        + result["out_of_bounds"]
+    )
+    print_kpi(
+        f"{prefix} YOLO labels",
+        label_issues == 0,
+        (
+            f"boxes={result['total_boxes']} malformed={result['malformed']} "
+            f"invalid_class={result['invalid_class']} "
+            f"invalid_size={result['invalid_size']} "
+            f"out_of_bounds={result['out_of_bounds']}"
+        ),
+    )
+
+
+def check_data_integrity() -> bool:
     print("\n=======================================================")
-    print("      TB DATALAKE INTEGRITY AND SECURITY AUDIT       ")
+    print("              TB DATASET INTEGRITY CHECK")
     print("=======================================================\n")
-    
-    root_dir = Path(__file__).resolve().parent.parent.parent
-    data_dir = root_dir / "01_DATA" / "processed_tiles" / "train"
-    img_dir = data_dir / "images"
-    lbl_dir = data_dir / "labels"
-    
-    # 1. Directory Structure Integrity
-    dir_ok = img_dir.exists() and lbl_dir.exists()
-    print_kpi("1. Neural Datalake Topology", dir_ok, f"Paths: {data_dir.relative_to(root_dir)}")
-    if not dir_ok:
-        print("\n[ABORTING] Datalake structure missing. Cannot proceed with Audit.\n")
-        return
 
-    images = list(img_dir.glob("*.jpg"))
-    labels = list(lbl_dir.glob("*.txt"))
-    
-    # 2. Vector Count Symmetry (Every Image must have a Label file)
-    img_stems = set(i.stem for i in images)
-    lbl_stems = set(l.stem for l in labels)
-    
-    symmetry_ok = (img_stems == lbl_stems)
-    orphaned_imgs = len(img_stems - lbl_stems)
-    orphaned_lbls = len(lbl_stems - img_stems)
-    
-    detail = f"Imgs: {len(images)} | Lbls: {len(labels)}"
-    if not symmetry_ok:
-         detail += f" | ORPHANS: {orphaned_imgs} Imgs, {orphaned_lbls} Lbls"
-    print_kpi("2. Tensor Matrix Symmetry", symmetry_ok, detail)
-    
-    # 3. Size constraints (No 0-byte corrupt files)
-    corrupt = 0
-    for file in images + labels:
-        if file.stat().st_size == 0:
-            corrupt += 1
-    
-    print_kpi("3. File Size Corruption Verification", corrupt == 0, f"Found {corrupt} Zero-Byte items.")
+    root_dir = Path(__file__).resolve().parents[2]
+    processed_root = root_dir / "01_DATA" / "processed_tiles"
+    results = inspect_yolo_dataset(processed_root, splits=("train", "val"), num_classes=5)
 
-    # 4. YOLO Structural Parsing (Strict Float Bounding Box math)
-    valid_format = True
-    malformed_lines = 0
-    total_boxes = 0
-    out_of_bounds = 0
-    
-    for lbl in labels:
-        with open(lbl, "r") as f:
-            lines = [line.strip() for line in f.readlines() if line.strip()]
-            for line in lines:
-                parts = line.split()
-                if len(parts) != 5:
-                    malformed_lines += 1
-                    valid_format = False
-                    continue
-                try:
-                    c, x, y, w, h = map(float, parts)
-                    total_boxes += 1
-                    if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0 and 0.0 <= w <= 1.0 and 0.0 <= h <= 1.0):
-                        out_of_bounds += 1
-                        valid_format = False
-                except ValueError:
-                    malformed_lines += 1
-                    valid_format = False
+    for split, result in results.items():
+        _print_split_result(split, result)
 
-    detail_yolo = f"{total_boxes} Valid Arrays"
-    if not valid_format:
-        detail_yolo += f" | {malformed_lines} Malformed | {out_of_bounds} Out-of-Bounds (>1.0)"
-
-    print_kpi("4. YOLO Coordinate Bounds (0.0 - 1.0)", valid_format, detail_yolo)
-
-    # 5. Config Mapping (data.yaml)
     yaml_path = root_dir / "02_CODE" / "data.yaml"
-    yaml_ok = yaml_path.exists()
-    print_kpi("5. Training Config (data.yaml)", yaml_ok, f"Path: {str(yaml_path.relative_to(root_dir))}" if yaml_ok else "MISSING")
-    
+    yaml_ok = yaml_path.is_file()
+    print_kpi(
+        "Training config",
+        yaml_ok,
+        str(yaml_path.relative_to(root_dir)) if yaml_ok else "02_CODE/data.yaml is missing",
+    )
+
+    passed = dataset_is_valid(results) and yaml_ok
     print("\n-------------------------------------------------------")
-    if dir_ok and symmetry_ok and corrupt == 0 and valid_format and yaml_ok:
-        print("\033[92mSECURITY AUDIT: PASSED.\033[0m")
-        print("Dataset is 100% compliant with PyTorch/Ultralytics standards.")
-        print("Ready for GPU Training Injection.")
+    if passed:
+        print("\033[92mDATA INTEGRITY CHECK: PASSED.\033[0m")
+        print("Required splits, image-label pairing, and YOLO label bounds are valid.")
     else:
-        print("\033[91mSECURITY AUDIT: FAILED.\033[0m")
-        print("Critical Data Integrity Violations detected.")
+        print("\033[91mDATA INTEGRITY CHECK: FAILED.\033[0m")
+        print("Review the failed checks above before training.")
     print("-------------------------------------------------------\n")
+    return passed
+
 
 if __name__ == "__main__":
-    check_data_integrity()
+    raise SystemExit(0 if check_data_integrity() else 1)
