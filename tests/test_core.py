@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from tb_afb.inference.who_grader import WHOGrader
