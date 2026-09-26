@@ -1,106 +1,163 @@
-import numpy as np
-from pathlib import Path
-from typing import List, Dict, Tuple, Any
 import time
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Tuple
+
 import cv2
+import numpy as np
+
 from .postprocessor import DetectionPostprocessor
 from ..models.yolo_detector import YOLOAFBDetector
 
 try:
     import openslide
+
     OPENSLIDE_AVAILABLE = True
 except ImportError:
+    openslide = None
     OPENSLIDE_AVAILABLE = False
 
+WSI_EXTENSIONS = {".svs", ".ndpi", ".vms", ".vmu", ".scn", ".bif", ".mrxs"}
+
+
 class SlidingWindowInference:
-    """
-    Inference on full WSI using sliding window approach.
-    Enforces Strict boundaries preventing Arbitrary file reads.
-    """
-    def __init__(self, model: YOLOAFBDetector, tile_size: int = 512, overlap: int = 128, batch_size: int = 16, confidence_threshold: float = 0.25):
+    """Run tiled inference on OpenSlide WSIs or standard raster images."""
+
+    def __init__(
+        self,
+        model: YOLOAFBDetector,
+        tile_size: int = 512,
+        overlap: int = 128,
+        batch_size: int = 16,
+        confidence_threshold: float = 0.25,
+    ):
+        if tile_size <= 0:
+            raise ValueError("tile_size must be positive.")
+        if overlap < 0 or overlap >= tile_size:
+            raise ValueError("overlap must satisfy 0 <= overlap < tile_size.")
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive.")
+        if not 0.0 <= confidence_threshold <= 1.0:
+            raise ValueError("confidence_threshold must be in [0, 1].")
+
         self.model = model
         self.tile_size = tile_size
         self.overlap = overlap
         self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
-        # Instantiate Secure Filter
-        self.postprocessor = DetectionPostprocessor(min_confidence=confidence_threshold)
+        self.postprocessor = DetectionPostprocessor(
+            min_confidence=confidence_threshold,
+        )
+
+    @property
+    def step(self) -> int:
+        return self.tile_size - self.overlap
+
+    def _axis_positions(self, length: int) -> List[int]:
+        if length <= self.tile_size:
+            return [0]
+        positions = list(range(0, length - self.tile_size + 1, self.step))
+        final = length - self.tile_size
+        if positions[-1] != final:
+            positions.append(final)
+        return positions
+
+    def _coords(self, width: int, height: int) -> List[Tuple[int, int]]:
+        return [
+            (x, y)
+            for y in self._axis_positions(height)
+            for x in self._axis_positions(width)
+        ]
+
+    @staticmethod
+    def _contains_tissue(image: np.ndarray) -> bool:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        return float(np.mean(gray)) < 235.0
+
+    def _translate(
+        self,
+        detections: Iterable[Dict],
+        offset_x: int,
+        offset_y: int,
+    ) -> List[Dict]:
+        translated = []
+        for detection in detections:
+            item = dict(detection)
+            bbox = list(item.get("bbox", []))
+            if len(bbox) != 4:
+                continue
+            bbox[0] = float(bbox[0]) + offset_x
+            bbox[1] = float(bbox[1]) + offset_y
+            item["bbox"] = bbox
+            translated.append(item)
+        return translated
+
+    def _predict_tile(self, image: np.ndarray, x: int, y: int) -> List[Dict]:
+        detections = self.model.predict(
+            image,
+            conf_threshold=self.confidence_threshold,
+        )
+        return self._translate(detections, x, y)
+
+    def _process_raster(self, image: np.ndarray) -> Tuple[List[Dict], int]:
+        height, width = image.shape[:2]
+        detections: List[Dict] = []
+        processed = 0
+
+        for x, y in self._coords(width, height):
+            tile = image[y : min(y + self.tile_size, height), x : min(x + self.tile_size, width)]
+            if tile.size == 0 or not self._contains_tissue(tile):
+                continue
+            detections.extend(self._predict_tile(tile, x, y))
+            processed += 1
+        return detections, processed
+
+    def _process_wsi(self, path: Path) -> Tuple[List[Dict], int]:
+        if not OPENSLIDE_AVAILABLE:
+            raise RuntimeError("OpenSlide is required for this WSI format.")
+
+        slide = openslide.OpenSlide(str(path))
+        detections: List[Dict] = []
+        processed = 0
+        try:
+            width, height = slide.dimensions
+            coords = self._coords(width, height)
+            for start in range(0, len(coords), self.batch_size):
+                for x, y in coords[start : start + self.batch_size]:
+                    region = slide.read_region(
+                        (x, y),
+                        0,
+                        (
+                            min(self.tile_size, width - x),
+                            min(self.tile_size, height - y),
+                        ),
+                    )
+                    tile = cv2.cvtColor(np.asarray(region), cv2.COLOR_RGBA2BGR)
+                    if not self._contains_tissue(tile):
+                        continue
+                    detections.extend(self._predict_tile(tile, x, y))
+                    processed += 1
+        finally:
+            slide.close()
+        return detections, processed
 
     def process_slide(self, wsi_path: Path) -> Dict[str, Any]:
-        """Orchestrate tiling and batch inference on a massive WSI binary."""
         start_time = time.time()
-        
-        # 🛡️ SECURITY CONTROL: Path resolution and Verification
-        wsi_path = Path(wsi_path).resolve()
-        if not wsi_path.exists() or not wsi_path.is_file():
-            raise FileNotFoundError(f"Missing valid WSI payload: {wsi_path.name}")
-            
-        all_detections = []
-        tiles_processed = 0
-        
-        if not OPENSLIDE_AVAILABLE:
-            # Fallback for standard images
-            img = cv2.imread(str(wsi_path))
-            if img is None:
-                raise ValueError(f"Could not read image: {wsi_path}")
-            h, w = img.shape[:2]
-            detections = self._process_image_tiles(img, (0, 0))
-            all_detections.extend(detections)
-            tiles_processed = 1 # Simplified for fallback
+        path = Path(wsi_path).resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"Image file not found: {path}")
+
+        if path.suffix.lower() in WSI_EXTENSIONS:
+            detections, processed = self._process_wsi(path)
         else:
-            slide = openslide.OpenSlide(str(wsi_path))
-            try:
-                w, h = slide.dimensions
-                step = self.tile_size - self.overlap
-                
-                # Tile coordinates generation
-                coords = []
-                for y in range(0, h, step):
-                    for x in range(0, w, step):
-                        coords.append((x, y))
-                
-                # Batch processing
-                for i in range(0, len(coords), self.batch_size):
-                    batch_coords = coords[i:i + self.batch_size]
-                    batch_imgs = []
-                    valid_coords = []
-                    
-                    for x, y in batch_coords:
-                        # 🛡️ TISSUE CHECK: Optimization to skip white space/background
-                        region = slide.read_region((x, y), 0, (self.tile_size, self.tile_size))
-                        img = cv2.cvtColor(np.array(region), cv2.COLOR_RGBA2BGR)
-                        
-                        # Basic tissue filter (mean intensity check)
-                        if np.mean(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)) < 235:
-                            batch_imgs.append(img)
-                            valid_coords.append((x, y))
-                    
-                    if batch_imgs:
-                        for img, (x, y) in zip(batch_imgs, valid_coords):
-                            tile_detections = self.model.predict(img, conf_threshold=self.confidence_threshold)
-                            # Translate to global coordinates
-                            for det in tile_detections:
-                                det['bbox'] = [
-                                    det['bbox'][0] + x, # x_center
-                                    det['bbox'][1] + y, # y_center
-                                    det['bbox'][2],     # w
-                                    det['bbox'][3]      # h
-                                ]
-                            all_detections.extend(tile_detections)
-                            tiles_processed += 1
-            finally:
-                slide.close() # 🛡️ SECURITY CONTROL: Prevent resource/FD exhaustion
+            image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+            if image is None:
+                raise ValueError(f"OpenCV could not decode image: {path}")
+            detections, processed = self._process_raster(image)
 
-        # Apply Global NMS to merge overlaps from different tiles
-        final_detections = self.postprocessor.filter(all_detections)
-        
+        final_detections = self.postprocessor.filter(detections)
         return {
-            "total_detections": len(final_detections), 
-            "detections": final_detections, 
-            "processing_time": time.time() - start_time, 
-            "tiles_processed": tiles_processed
+            "total_detections": len(final_detections),
+            "detections": final_detections,
+            "processing_time": time.time() - start_time,
+            "tiles_processed": processed,
         }
-
-    def _process_image_tiles(self, img: np.ndarray, offset: Tuple[int, int]) -> List[Dict]:
-        """Process tiles for a standard image (fallback mode)"""
-        return self.model.predict(img, conf_threshold=self.confidence_threshold)
