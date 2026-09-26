@@ -20,6 +20,8 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.body_limit import RequestBodyLimitMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fpdf import FPDF
 from pydantic import BaseModel, Field, model_validator
 
@@ -45,12 +47,20 @@ sys.path.append(str(src_dir))
 
 from tb_afb.utils.paths import resolve_within
 
+MAX_FILE_SIZE = 250 * 1024 * 1024
+MAX_REQUEST_BODY_SIZE = MAX_FILE_SIZE + 2 * 1024 * 1024
+
 app = FastAPI(title="TB AFB Research API")
 
 static_dir = current_dir / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/ui", StaticFiles(directory=str(static_dir), html=True), name="ui")
 
+app.add_middleware(RequestBodyLimitMiddleware, max_body_size=MAX_REQUEST_BODY_SIZE)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["127.0.0.1", "localhost"],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"],
@@ -59,7 +69,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-CSRF-Token"],
 )
 
-MAX_FILE_SIZE = 250 * 1024 * 1024
 UPLOAD_CHUNK_SIZE = 1024 * 1024
 MAX_DECODED_PIXELS = 100_000_000
 WEB_IMAGE_EXTENSIONS = {
