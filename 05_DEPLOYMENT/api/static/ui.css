@@ -1,0 +1,75 @@
+.notice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.10);
+  color: #78350f;
+  font-size: 0.95rem;
+}
+
+.toolbar { display: flex; justify-content: flex-end; margin-bottom: 18px; }
+
+.glass-btn, button {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+button:hover:not(:disabled), .glass-btn:hover { border-color: var(--accent-vibrant); }
+
+button:focus-visible, .glass-btn:focus-visible, .upload-zone:focus-visible, input:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.report-controls {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.report-controls input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.hardware-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.wide { max-width: 1200px; }
+.annotation-layout { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(0, 2fr); gap: 24px; }
+.annotation-controls { display: flex; flex-direction: column; gap: 16px; }
+.annotation-controls button { width: 100%; margin-top: 10px; }
+.metric-card.left { text-align: left; }
+.compact { padding: 32px 20px; }
+.annotation-preview { min-height: 600px; display: flex; align-items: center; justify-content: center; }
+.viewer { width: 100%; height: 80vh; background: #f1f5f9; border-radius: 12px; }
+
+@media (max-width: 760px) {
+  body { align-items: flex-start; }
+  .app-container { width: 96%; padding: 24px 16px; margin: 16px 0; }
+  h1 { font-size: 2rem; }
+  .dashboard-header, .hardware-status { align-items: flex-start; flex-direction: column; }
+  .report-controls { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr; }
+  .annotation-layout { grid-template-columns: 1fr; }
+  .annotation-preview { min-height: 420px; }
+  .upload-zone { padding: 40px 20px; }
+}
