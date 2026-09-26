@@ -1,22 +1,20 @@
-version: '3.8'
-
 services:
   tb-afb-api:
     build: .
-    restart: always
+    init: true
+    restart: unless-stopped
     ports:
       - "8001:8001"
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: 1
-#              capabilities: [gpu]
     volumes:
       - ./01_DATA:/app/01_DATA
       - ./03_MODELS:/app/03_MODELS
       - ./06_LOGS:/app/06_LOGS
     environment:
-      - PYTHONUNBUFFERED=1
-      - CHOKIDAR_USEPOLLING=true
+      PYTHONUNBUFFERED: "1"
+      TB_AFB_ENABLE_TRAINING_TRIGGER: "0"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8001/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
