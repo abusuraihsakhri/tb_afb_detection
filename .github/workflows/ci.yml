@@ -12,8 +12,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -27,6 +29,12 @@ jobs:
           python -m pip install --no-deps -e 02_CODE
       - name: Compile Python sources
         run: python -m compileall 02_CODE 05_DEPLOYMENT
+      - name: Check JavaScript syntax
+        run: |
+          node --check 05_DEPLOYMENT/api/static/app.js
+          node --check 05_DEPLOYMENT/api/static/annotate.js
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
       - name: Run tests
         run: pytest -q
       - name: Audit Python dependencies
