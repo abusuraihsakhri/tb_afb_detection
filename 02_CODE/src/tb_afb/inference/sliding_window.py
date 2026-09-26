@@ -98,13 +98,19 @@ class SlidingWindowInference:
         )
         return self._translate(detections, x, y)
 
-    def _process_raster(self, image: np.ndarray) -> Tuple[List[Dict], int, None]:
+    def _process_raster(
+        self,
+        image: np.ndarray,
+    ) -> Tuple[List[Dict], int, None]:
         height, width = image.shape[:2]
         detections: List[Dict] = []
         processed = 0
 
         for x, y in self._coords(width, height):
-            tile = image[y : min(y + self.tile_size, height), x : min(x + self.tile_size, width)]
+            tile = image[
+                y : min(y + self.tile_size, height),
+                x : min(x + self.tile_size, width),
+            ]
             if tile.size == 0 or not self._contains_tissue(tile):
                 continue
             detections.extend(self._predict_tile(tile, x, y))
@@ -127,7 +133,10 @@ class SlidingWindowInference:
             values.append(value)
         return float(sum(values) / len(values))
 
-    def _process_wsi(self, path: Path) -> Tuple[List[Dict], int, float | None]:
+    def _process_wsi(
+        self,
+        path: Path,
+    ) -> Tuple[List[Dict], int, float | None]:
         if not OPENSLIDE_AVAILABLE:
             raise RuntimeError("OpenSlide is required for this WSI format.")
 
@@ -171,9 +180,14 @@ class SlidingWindowInference:
                 raise ValueError(f"OpenCV could not decode image: {path}")
             detections, processed, pixel_size_microns = self._process_raster(image)
 
-        final_detections = self.postprocessor.filter(\n            detections,\n            pixel_size_microns=pixel_size_microns,\n        )
+        final_detections = self.postprocessor.filter(
+            detections,
+            pixel_size_microns=pixel_size_microns,
+        )
         return {
             "total_detections": len(final_detections),
             "detections": final_detections,
             "processing_time": time.time() - start_time,
-            "tiles_processed": processed,\n            "pixel_size_microns": pixel_size_microns,\n        }
+            "tiles_processed": processed,
+            "pixel_size_microns": pixel_size_microns,
+        }
