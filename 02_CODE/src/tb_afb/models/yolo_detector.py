@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any, Dict, List
 
+import numpy as np
+
 
 class YOLOAFBDetector:
     """Small wrapper around Ultralytics YOLO used by training and inference."""
