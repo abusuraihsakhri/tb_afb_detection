@@ -51,3 +51,35 @@ def test_who_grading_rejects_invalid_values():
         WHOGrader().calculate_grade(-1, 100)
     with pytest.raises(ValueError):
         WHOGrader().calculate_grade(1, 0)
+
+
+from tb_afb.data.stain_normalizer import MacenkoNormalizer
+from tb_afb.inference.postprocessor import DetectionPostprocessor
+
+
+def test_postprocessor_excludes_non_afb_classes():
+    processor = DetectionPostprocessor(min_confidence=0.1)
+    detections = [
+        {"bbox": [10, 10, 4, 12], "confidence": 0.9, "class_id": 0},
+        {"bbox": [20, 20, 4, 12], "confidence": 0.9, "class_id": 3},
+        {"bbox": [30, 30, 4, 12], "confidence": 0.9, "class_id": 4},
+    ]
+    result = processor.filter(detections)
+    assert [item["class_id"] for item in result] == [0]
+
+
+def test_macenko_normalizer_requires_fit():
+    normalizer = MacenkoNormalizer()
+    image = np.full((8, 8, 3), 128, dtype=np.uint8)
+    with pytest.raises(RuntimeError):
+        normalizer.transform(image)
+
+
+def test_macenko_normalizer_preserves_shape_and_dtype():
+    rng = np.random.default_rng(42)
+    reference = rng.integers(20, 235, size=(64, 64, 3), dtype=np.uint8)
+    source = rng.integers(20, 235, size=(64, 64, 3), dtype=np.uint8)
+    normalizer = MacenkoNormalizer(reference)
+    normalized = normalizer.transform(source)
+    assert normalized.shape == source.shape
+    assert normalized.dtype == np.uint8
