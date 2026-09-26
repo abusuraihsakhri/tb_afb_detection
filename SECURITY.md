@@ -15,7 +15,8 @@ The API does not implement user authentication or authorization. CORS restrictio
 ## Implemented controls
 
 - Path resolution uses `Path.relative_to`-based containment checks for configured data roots.
-- Raster uploads are limited by streamed byte count and decoded pixel count.
+- Raw HTTP request bodies, streamed raster uploads, and decoded pixel counts are bounded.
+- Trusted-host validation restricts the supplied local service to `localhost`/`127.0.0.1` host headers, reducing DNS-rebinding exposure.
 - Accepted web-upload extensions are restricted and the image must decode successfully.
 - Annotation bounding boxes are validated to normalized image bounds.
 - Annotation images are decoded and re-encoded before entering the training dataset.
