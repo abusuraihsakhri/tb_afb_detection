@@ -24,6 +24,10 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Syntax check
         run: python -m compileall -q 02_CODE 05_DEPLOYMENT/api
+      - name: Package build
+        run: python -m build 02_CODE
+      - name: Dependency vulnerability audit
+        run: pip-audit --no-deps -r requirements.txt
       - name: Critical lint checks
         run: ruff check --select E9,F63,F7,F82 02_CODE 05_DEPLOYMENT/api tests
       - name: Launcher syntax
