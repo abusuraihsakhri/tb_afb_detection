@@ -1,18 +1,20 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
 
 setup(
     name="tb_afb",
     version="1.0.0",
-    description="Automated AFB Detection Toolkit containing secure pipeline modules",
+    description="Research toolkit for tiled AFB candidate detection workflows",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     install_requires=[
-        "numpy>=1.24.0",
-        "openslide-python>=1.3.0",
-        "opencv-python>=4.8.0",
-        "torch>=2.0.0",
-        "pydantic>=2.0.0",
-        "pyyaml>=6.0.0"
+        "numpy>=1.26,<3",
+        "openslide-python>=1.3",
+        "opencv-python-headless>=4.10",
+        "torch>=2.0",
+        "ultralytics>=8.4,<9",
+        "pydantic>=2.0,<3",
+        "pyyaml>=6.0",
     ],
     python_requires=">=3.9",
 )
