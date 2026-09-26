@@ -4,7 +4,7 @@ services:
     init: true
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     volumes:
       - ./01_DATA:/app/01_DATA
       - ./03_MODELS:/app/03_MODELS
