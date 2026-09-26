@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 import subprocess
 import sys
 import uuid
@@ -8,6 +9,9 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+
+# OpenCV reads this limit at import time. Keep compressed-image decompression bounded.
+os.environ.setdefault("OPENCV_IO_MAX_IMAGE_PIXELS", "100000000")
 
 import cv2
 import numpy as np
@@ -52,7 +56,7 @@ app.add_middleware(
     allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-CSRF-Token"],
 )
 
 MAX_FILE_SIZE = 250 * 1024 * 1024
@@ -116,6 +120,7 @@ ACTIVE_MODEL_PATH = None
 TRAINING_PROCESS = None
 WSI_HANDLES = OrderedDict()
 MAX_WSI_HANDLES = 4
+CSRF_TOKEN = secrets.token_urlsafe(32)
 
 
 def _device() -> torch.device:
@@ -285,6 +290,18 @@ def _training_enabled() -> bool:
     }
 
 
+def _require_csrf(request: Request) -> None:
+    supplied = request.headers.get("x-csrf-token", "")
+    if not supplied or not secrets.compare_digest(supplied, CSRF_TOKEN):
+        raise HTTPException(status_code=403, detail="Missing or invalid same-origin request token.")
+
+
+@app.get("/api/v1/session")
+async def session():
+    """Return the ephemeral token used to protect local state-changing browser requests."""
+    return {"csrf_token": CSRF_TOKEN}
+
+
 @app.get("/api/v1/health")
 async def health():
     return {
@@ -327,6 +344,7 @@ async def save_annotation(
     file: UploadFile = File(...),
     boxes: str = Form(...),
 ):
+    _require_csrf(request)
     _validate_filename(file.filename)
     try:
         raw_boxes = json.loads(boxes)
@@ -364,9 +382,10 @@ async def save_annotation(
 
 
 @app.post("/api/v1/trigger_training")
-async def trigger_training():
+async def trigger_training(request: Request):
     global TRAINING_PROCESS
 
+    _require_csrf(request)
     if not _training_enabled():
         raise HTTPException(
             status_code=403,
