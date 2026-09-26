@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Dict, Iterable, List, Set
+
+import numpy as np
 
 
 class DetectionPostprocessor:
@@ -24,7 +25,16 @@ class DetectionPostprocessor:
         self.nms_iou_threshold = nms_iou_threshold
         self.allowed_class_ids: Set[int] = {int(value) for value in allowed_class_ids}
 
-    def filter(\n        self,\n        detections: List[Dict],\n        pixel_size_microns: float | None = None,\n    ) -> List[Dict]:\n        if pixel_size_microns is not None and pixel_size_microns <= 0:\n            raise ValueError("pixel_size_microns must be positive when provided.")\n\n        filtered = []\n        for detection in detections:
+    def filter(
+        self,
+        detections: List[Dict],
+        pixel_size_microns: float | None = None,
+    ) -> List[Dict]:
+        if pixel_size_microns is not None and pixel_size_microns <= 0:
+            raise ValueError("pixel_size_microns must be positive when provided.")
+
+        filtered = []
+        for detection in detections:
             if int(detection.get("class_id", -1)) not in self.allowed_class_ids:
                 continue
 
