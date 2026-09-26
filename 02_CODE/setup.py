@@ -16,5 +16,5 @@ setup(
         "pydantic>=2.0,<3",
         "pyyaml>=6.0",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.10",
 )
