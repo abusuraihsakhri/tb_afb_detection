@@ -1,14 +1,13 @@
-# 🛡️ PORTABLE CLINICAL DEP-ENV: CUDA 12.2 + Python 3.12 
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
 
-# Avoid interactive prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system-level medical binary decoders (OpenSlide, VIPS)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-dev \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libopenslide0 \
     openslide-tools \
@@ -18,15 +17,17 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+# PyTorch 2.13 publishes CUDA 12.6 wheels separately from the default CUDA 13 PyPI wheel.
+RUN python3 -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu126 \
+        torch==2.13.0 torchvision==0.28.0 \
+    && python3 -m pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project architecture
 COPY . .
 
-# Expose the Clinical API port
 EXPOSE 8001
 
-# Run the FastAPI server natively via Uvicorn
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl --fail --silent http://127.0.0.1:8001/api/v1/health || exit 1
+
 CMD ["python3", "-m", "uvicorn", "05_DEPLOYMENT.api.server:app", "--host", "0.0.0.0", "--port", "8001"]

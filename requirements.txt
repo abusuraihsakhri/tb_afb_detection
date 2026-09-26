@@ -1,23 +1,24 @@
-# 🛡️ DETERMINISTIC CLINICAL BASELINE (Verified Versions)
+# Reproducible runtime dependencies
 
-# Core Deep Learning (Pinned to latest stable medical verified)
-torch==2.10.0
-torchvision==0.25.0
+# Core deep learning
+torch==2.13.0
+torchvision==0.28.0
 ultralytics==8.4.31
 
-# Medical Computer Vision & Array Manipulation
-opencv-python-headless==4.10.0.84
-numpy==1.26.4
+# Computer vision and array processing
+opencv-python-headless==4.12.0.88
+numpy==2.2.6
 openslide-python==1.3.1
 
-# High-Performance API Backend
-fastapi==0.128.0
-uvicorn[standard]==0.32.1
+# API backend
+fastapi==0.141.1
+starlette==1.6.0
+uvicorn[standard]==0.52.3
 pydantic==2.12.5
 
-# Configuration & Security utilities
+# Configuration and upload parsing
 pyyaml==6.0.1
-python-multipart==0.0.12
+python-multipart==0.0.32
 
-# Clinical Reporting
+# PDF reporting
 fpdf2==2.8.1

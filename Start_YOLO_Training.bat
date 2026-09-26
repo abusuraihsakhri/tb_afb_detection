@@ -1,11 +1,19 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
 echo =======================================================
-echo     TB PATHOLOGY INTELLIGENCE - DEEP LEARNING ENGINE
+echo        TB AFB RESEARCH - YOLO TRAINING
 echo =======================================================
-echo Injecting Annotated Arrays into YOLOv8 PyTorch Backend...
 
 python 02_CODE\scripts\02_train.py --data data.yaml
+if %errorlevel% neq 0 (
+    echo.
+    echo Training failed. Review the error above.
+    pause
+    exit /b 1
+)
 
 echo.
-echo Training Event Complete. Check 03_MODELS\experiments\exp_1\weights for new best.pt.
+echo Training completed. Ultralytics writes the best checkpoint under runs\detect\...\weights\best.pt.
 pause
