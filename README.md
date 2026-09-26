@@ -122,6 +122,7 @@ The Compose configuration binds the application to localhost at port 8001, mount
 - File resolution helpers reject paths that escape configured data roots.
 - Upload size, decoded image size, individual WSI reads, and cached WSI handles are bounded.
 - The local API has **no user authentication**. Keep it on localhost or place it behind an authenticated reverse proxy before network exposure.
+- State-changing annotation/training browser requests require an ephemeral same-origin request token to reduce cross-origin form/CSRF abuse; this is not a substitute for authentication.
 - Only load model checkpoints from trusted sources. PyTorch/Ultralytics checkpoint formats can execute unsafe deserialization paths depending on the loader and version.
 - Git ignore rules do not de-identify data or provide encryption. Users remain responsible for PHI/PII handling and institutional policy.
 
@@ -151,4 +152,4 @@ GitHub Pages is not used for the application. The main workflow requires a Pytho
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+The repository source is distributed under Apache License 2.0; see [LICENSE](LICENSE). Third-party dependencies and model artifacts retain their own licenses. In particular, Ultralytics currently offers its YOLO software/models under AGPL-3.0 or an Enterprise license, so deployments using Ultralytics must satisfy the applicable Ultralytics license terms.
