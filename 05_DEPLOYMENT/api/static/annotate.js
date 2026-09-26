@@ -16,6 +16,7 @@ let boxes = [];
 let imgObj = null;
 let currentFile = null;
 let scaleRatio = 1.0;
+let csrfToken = null;
 
 function setStatus(message) {
   statusText.textContent = message;
@@ -33,6 +34,16 @@ async function safeErrorDetail(response) {
   } catch {
     return `Server returned ${response.status}`;
   }
+}
+
+async function ensureCsrfToken() {
+  if (csrfToken) return csrfToken;
+  const response = await fetch('/api/v1/session', { cache: 'no-store' });
+  if (!response.ok) throw new Error(await safeErrorDetail(response));
+  const data = await response.json();
+  if (!data.csrf_token) throw new Error('Server did not provide a request token.');
+  csrfToken = data.csrf_token;
+  return csrfToken;
 }
 
 async function refreshKPIs() {
@@ -221,7 +232,12 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   formData.append('boxes', JSON.stringify(boxes.map(({ x, y, width, height, label }) => ({ x, y, width, height, label }))));
   setStatus('Saving annotation...');
   try {
-    const response = await fetch('/api/v1/save_annotation', { method: 'POST', body: formData });
+    const token = await ensureCsrfToken();
+    const response = await fetch('/api/v1/save_annotation', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': token },
+      body: formData,
+    });
     if (!response.ok) throw new Error(await safeErrorDetail(response));
     const data = await response.json();
     boxes = [];
@@ -237,7 +253,11 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
 trainButton.addEventListener('click', async () => {
   setStatus('Starting training...');
   try {
-    const response = await fetch('/api/v1/trigger_training', { method: 'POST' });
+    const token = await ensureCsrfToken();
+    const response = await fetch('/api/v1/trigger_training', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': token },
+    });
     if (!response.ok) throw new Error(await safeErrorDetail(response));
     const data = await response.json();
     setStatus(data.message);
