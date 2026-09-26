@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -18,7 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
+# PyTorch 2.13 publishes CUDA 12.6 wheels separately from the default CUDA 13 PyPI wheel.
+RUN python3 -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu126 \
+        torch==2.13.0 torchvision==0.28.0 \
+    && python3 -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
