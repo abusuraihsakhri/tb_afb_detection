@@ -3,6 +3,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tb_afb.data.integrity import (
+    dataset_is_valid,
+    inspect_yolo_dataset,
+    split_is_valid,
+    validate_yolo_label_line,
+)
+from tb_afb.data.stain_normalizer import MacenkoNormalizer
+from tb_afb.inference.postprocessor import DetectionPostprocessor
 from tb_afb.inference.who_grader import WHOGrader
 from tb_afb.utils.paths import resolve_within
 
@@ -54,10 +62,6 @@ def test_who_grading_rejects_invalid_values():
         WHOGrader().calculate_grade(1, 0)
 
 
-from tb_afb.data.stain_normalizer import MacenkoNormalizer
-from tb_afb.inference.postprocessor import DetectionPostprocessor
-
-
 def test_postprocessor_excludes_non_afb_classes():
     processor = DetectionPostprocessor(min_confidence=0.1)
     detections = [
@@ -84,3 +88,47 @@ def test_macenko_normalizer_preserves_shape_and_dtype():
     normalized = normalizer.transform(source)
     assert normalized.shape == source.shape
     assert normalized.dtype == np.uint8
+
+
+@pytest.mark.parametrize(
+    ("line", "issue"),
+    [
+        ("0 0.5 0.5 0.1 0.2", None),
+        ("5 0.5 0.5 0.1 0.2", "invalid_class"),
+        ("0.5 0.5 0.5 0.1 0.2", "invalid_class"),
+        ("0 0.5 0.5 0 0.2", "invalid_size"),
+        ("0 0.05 0.5 0.2 0.2", "out_of_bounds"),
+        ("0 nan 0.5 0.2 0.2", "malformed"),
+        ("0 0.5 0.5", "malformed"),
+    ],
+)
+def test_yolo_label_validation(line, issue):
+    assert validate_yolo_label_line(line) == issue
+
+
+def _write_minimal_split(root: Path, split: str, label: str = "") -> None:
+    image_dir = root / split / "images"
+    label_dir = root / split / "labels"
+    image_dir.mkdir(parents=True)
+    label_dir.mkdir(parents=True)
+    (image_dir / "sample.jpg").write_bytes(b"nonempty")
+    (label_dir / "sample.txt").write_text(label, encoding="utf-8")
+
+
+def test_dataset_integrity_requires_train_and_validation_splits(tmp_path: Path):
+    _write_minimal_split(tmp_path, "train", "0 0.5 0.5 0.1 0.2\n")
+    results = inspect_yolo_dataset(tmp_path, splits=("train", "val"))
+    assert split_is_valid(results["train"]) is True
+    assert split_is_valid(results["val"]) is False
+    assert dataset_is_valid(results) is False
+
+    _write_minimal_split(tmp_path, "val")
+    results = inspect_yolo_dataset(tmp_path, splits=("train", "val"))
+    assert dataset_is_valid(results) is True
+
+
+def test_dataset_integrity_rejects_invalid_class(tmp_path: Path):
+    _write_minimal_split(tmp_path, "train", "7 0.5 0.5 0.1 0.2\n")
+    result = inspect_yolo_dataset(tmp_path, splits=("train",))["train"]
+    assert result["invalid_class"] == 1
+    assert split_is_valid(result) is False

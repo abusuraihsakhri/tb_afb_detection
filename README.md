@@ -136,7 +136,10 @@ Lightweight checks do not require model downloads:
 python -m pip install -r requirements-dev.txt
 PYTHONPATH=02_CODE/src pytest -q
 python -m compileall -q 02_CODE 05_DEPLOYMENT/api
+python 02_CODE/scripts/check_data_integrity.py
 ```
+
+The dataset integrity command checks both required train/validation splits, image-label pairing, non-empty image files, class IDs, normalized box sizes, and image-bound containment. It exits non-zero when a required check fails.
 
 GitHub Actions runs syntax checks, critical Ruff checks, and the core unit tests on Python 3.10 and 3.12.
 
