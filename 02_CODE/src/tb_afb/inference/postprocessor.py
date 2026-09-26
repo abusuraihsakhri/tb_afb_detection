@@ -7,9 +7,8 @@ class DetectionPostprocessor:
 
     MIN_ASPECT_RATIO = 2.0
     MAX_ASPECT_RATIO = 10.0
-    MIN_AREA_MICRONS = 2.0
-    MAX_AREA_MICRONS = 20.0
-    PIXEL_SIZE_MICRONS = 0.25
+    MIN_AREA_SQUARE_MICRONS = 2.0
+    MAX_AREA_SQUARE_MICRONS = 20.0
 
     def __init__(
         self,
@@ -25,9 +24,7 @@ class DetectionPostprocessor:
         self.nms_iou_threshold = nms_iou_threshold
         self.allowed_class_ids: Set[int] = {int(value) for value in allowed_class_ids}
 
-    def filter(self, detections: List[Dict]) -> List[Dict]:
-        filtered = []
-        for detection in detections:
+    def filter(\n        self,\n        detections: List[Dict],\n        pixel_size_microns: float | None = None,\n    ) -> List[Dict]:\n        if pixel_size_microns is not None and pixel_size_microns <= 0:\n            raise ValueError("pixel_size_microns must be positive when provided.")\n\n        filtered = []\n        for detection in detections:
             if int(detection.get("class_id", -1)) not in self.allowed_class_ids:
                 continue
 
@@ -46,16 +43,23 @@ class DetectionPostprocessor:
                 continue
 
             aspect_ratio = max(width, height) / min(width, height)
-            area_microns = (
-                width * self.PIXEL_SIZE_MICRONS
-            ) * (
-                height * self.PIXEL_SIZE_MICRONS
-            )
-            if (
-                self.MIN_ASPECT_RATIO <= aspect_ratio <= self.MAX_ASPECT_RATIO
-                and self.MIN_AREA_MICRONS <= area_microns <= self.MAX_AREA_MICRONS
-            ):
-                filtered.append(detection)
+            if not self.MIN_ASPECT_RATIO <= aspect_ratio <= self.MAX_ASPECT_RATIO:
+                continue
+
+            if pixel_size_microns is not None:
+                area_square_microns = (
+                    width * pixel_size_microns
+                ) * (
+                    height * pixel_size_microns
+                )
+                if not (
+                    self.MIN_AREA_SQUARE_MICRONS
+                    <= area_square_microns
+                    <= self.MAX_AREA_SQUARE_MICRONS
+                ):
+                    continue
+
+            filtered.append(detection)
 
         if not filtered:
             return []
