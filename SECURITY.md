@@ -19,6 +19,7 @@ The API does not implement user authentication or authorization. CORS restrictio
 - Accepted web-upload extensions are restricted and the image must decode successfully.
 - Annotation bounding boxes are validated to normalized image bounds.
 - Annotation images are decoded and re-encoded before entering the training dataset.
+- State-changing annotation and training requests require an ephemeral same-origin request token, reducing cross-origin form/CSRF abuse in the local browser workflow.
 - The HTTP training trigger is disabled unless `TB_AFB_ENABLE_TRAINING_TRIGGER=1` is explicitly set.
 - Only one training process can be launched at a time through the API.
 - WSI region reads and the in-memory WSI handle cache are bounded.
