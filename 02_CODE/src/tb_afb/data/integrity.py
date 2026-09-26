@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
@@ -97,6 +97,19 @@ def inspect_yolo_split(split_root: Path, num_classes: int = 5) -> dict[str, Any]
     return result
 
 
+def inspect_yolo_dataset(
+    processed_root: Path,
+    splits: Iterable[str] = ("train", "val"),
+    num_classes: int = 5,
+) -> dict[str, dict[str, Any]]:
+    """Inspect all required dataset splits."""
+    root = Path(processed_root)
+    return {
+        split: inspect_yolo_split(root / split, num_classes=num_classes)
+        for split in splits
+    }
+
+
 def split_is_valid(result: dict[str, Any]) -> bool:
     """Return whether a split passes structural and label-level checks."""
     return bool(
@@ -109,3 +122,8 @@ def split_is_valid(result: dict[str, Any]) -> bool:
         and result["invalid_size"] == 0
         and result["out_of_bounds"] == 0
     )
+
+
+def dataset_is_valid(results: dict[str, dict[str, Any]]) -> bool:
+    """Return whether every required split passes the integrity checks."""
+    return bool(results) and all(split_is_valid(result) for result in results.values())
