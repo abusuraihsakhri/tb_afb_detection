@@ -98,7 +98,7 @@ class SlidingWindowInference:
         )
         return self._translate(detections, x, y)
 
-    def _process_raster(self, image: np.ndarray) -> Tuple[List[Dict], int]:
+    def _process_raster(self, image: np.ndarray) -> Tuple[List[Dict], int, None]:
         height, width = image.shape[:2]
         detections: List[Dict] = []
         processed = 0
@@ -109,9 +109,25 @@ class SlidingWindowInference:
                 continue
             detections.extend(self._predict_tile(tile, x, y))
             processed += 1
-        return detections, processed
+        return detections, processed, None
 
-    def _process_wsi(self, path: Path) -> Tuple[List[Dict], int]:
+    @staticmethod
+    def _slide_mpp(slide) -> float | None:
+        values = []
+        for key in (openslide.PROPERTY_NAME_MPP_X, openslide.PROPERTY_NAME_MPP_Y):
+            raw = slide.properties.get(key)
+            if raw is None:
+                return None
+            try:
+                value = float(raw)
+            except (TypeError, ValueError):
+                return None
+            if not np.isfinite(value) or value <= 0:
+                return None
+            values.append(value)
+        return float(sum(values) / len(values))
+
+    def _process_wsi(self, path: Path) -> Tuple[List[Dict], int, float | None]:
         if not OPENSLIDE_AVAILABLE:
             raise RuntimeError("OpenSlide is required for this WSI format.")
 
@@ -120,6 +136,7 @@ class SlidingWindowInference:
         processed = 0
         try:
             width, height = slide.dimensions
+            pixel_size_microns = self._slide_mpp(slide)
             coords = self._coords(width, height)
             for start in range(0, len(coords), self.batch_size):
                 for x, y in coords[start : start + self.batch_size]:
@@ -138,7 +155,7 @@ class SlidingWindowInference:
                     processed += 1
         finally:
             slide.close()
-        return detections, processed
+        return detections, processed, pixel_size_microns
 
     def process_slide(self, wsi_path: Path) -> Dict[str, Any]:
         start_time = time.time()
@@ -147,17 +164,16 @@ class SlidingWindowInference:
             raise FileNotFoundError(f"Image file not found: {path}")
 
         if path.suffix.lower() in WSI_EXTENSIONS:
-            detections, processed = self._process_wsi(path)
+            detections, processed, pixel_size_microns = self._process_wsi(path)
         else:
             image = cv2.imread(str(path), cv2.IMREAD_COLOR)
             if image is None:
                 raise ValueError(f"OpenCV could not decode image: {path}")
-            detections, processed = self._process_raster(image)
+            detections, processed, pixel_size_microns = self._process_raster(image)
 
-        final_detections = self.postprocessor.filter(detections)
+        final_detections = self.postprocessor.filter(\n            detections,\n            pixel_size_microns=pixel_size_microns,\n        )
         return {
             "total_detections": len(final_detections),
             "detections": final_detections,
             "processing_time": time.time() - start_time,
-            "tiles_processed": processed,
-        }
+            "tiles_processed": processed,\n            "pixel_size_microns": pixel_size_microns,\n        }
