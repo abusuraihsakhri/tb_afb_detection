@@ -1,114 +1,130 @@
-# 🔬 TB-AFB Clinical Intelligence Engine
-### Developed by **Dr. Abu Suraih Sakhri**
+# TB-AFB Detection Research Toolkit
 
-[![Clinical Grade](https://img.shields.io/badge/Status-Clinical--Ready-success.svg)](https://github.com/abusuraihsakhri/tb_afb_detection)
-[![Cyber Security](https://img.shields.io/badge/Audit-PASSED-blue.svg)](SECURITY.md)
-[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
+A local research toolkit for acid-fast bacillus (AFB) candidate detection, image tiling, annotation, YOLO training, and whole-slide-image (WSI) experimentation.
 
-A state-of-the-art, **GPU-accelerated Whole Slide Image (WSI) detection platform** for Mycobacteria Tuberculosis (AFB) screening. This system is designed for high-throughput digital pathology, providing automated diagnostic assistance and active learning capabilities.
+> **Research use only.** This repository is not a validated medical device, does not establish a tuberculosis diagnosis, and must not be used as the sole basis for clinical decisions.
 
----
+## Main workflows
 
-## 👨‍💻 Author Info
-This system was developed and architected by **Dr. Abu Suraih Sakhri** with a focus on bridging the gap between clinical pathology expertise and advanced neural orchestration.
+- **Patch-image screening UI:** local FastAPI interface for JPG/PNG/TIFF/JP2-family raster images.
+- **Annotation UI:** draw normalized YOLO bounding boxes and store JPEG-normalized training samples locally.
+- **YOLO training:** train an Ultralytics detector against the local `01_DATA/processed_tiles` dataset.
+- **WSI CLI inference:** tiled inference for OpenSlide-compatible formats such as SVS and NDPI.
+- **Local WSI viewer:** Deep Zoom viewing for slides placed in `01_DATA/raw_wsi`.
 
----
+The repository contains base YOLO weights for convenience. Trained `best.pt` checkpoints are discovered only under `03_MODELS/` and `runs/`.
 
-## 🚀 Key Clinical Capabilities
-*   **Universal Hardware Acceleration**: 
-    *   **NVIDIA**: Full CUDA support for Tensor Cores.
-    *   **Apple Silicon**: Native **Metal/MPS** support for Mac **M-Series (M1, M2, M3, M4 and beyond)**.
-    *   **Hybrid Orchestration**: Automatically scales from personal workstations (8GB RAM) to high-capacity clinical servers (128GB+ RAM).
-*   **Multi-Platform Ingestion**: Full support for Windows 10/11, macOS (Ventura+), and Generic Linux (Ubuntu/Debian/Fedora).
-*   **High-Speed WSI Tiling**: Multi-threaded slicing of massive pyramidal slides (.svs, .ndpi, .tiff).
-*   **Dynamic Weight Orchestration**: Instant adoption of updated neural training results without service interruption.
-*   **Active Learning Engine**: Integrated clinical annotation tool for expert-driven algorithm optimization.
+## Requirements
 
----
+- Python 3.10+
+- OpenSlide system libraries for WSI workflows
+- Optional NVIDIA CUDA or Apple Metal/MPS acceleration
 
-## 🧠 How it Works: Component Deep-Dive
-
-### 1. WSI Slicing Engine (Inpainter/Extractor)
-Medical Whole Slide Images (WSIs) often exceed 100,000 pixels in dimension, making them too large for direct neural processing. 
-*   **The Logic**: The system utilizes **OpenSlide** and **libVIPS** to slice the massive binary file into uniform 512x512 "tiles". 
-*   **Clinical Intelligence**: To save time and compute, the system performs a **Background Masking** check, automatically skipping empty glass/white space to process only those tiles containing relevant tissue.
-
-### 2. Neural Orchestration & Hot-Swapping
-The core of the detection is a YOLO-based deep learning architecture.
-*   **Detection**: The model analyzes each tissue tile for the specific morphology of M. Tuberculosis (rod-like structure, ZN-staining characteristics).
-*   **Device Mapping**: It automatically detects your hardware. On specialized workstations, it uses **CUDA**. On modern Macs, it uses **Metal (MPS)**.
-*   **Hot-Swapping**: When a pathologist finishes a new training run, the API detects the updated weights (`best.pt`) and "Hot-Mounts" them instantly.
-
-### 3. Active Learning & Expert Ingestion
-The system allows the algorithm to grow smarter with every slide review.
-*   **Ground Truth**: Pathologists use the **Annotation Tool** to manually box valid AFB rods. 
-*   **Data Hygiene**: These boxes are converted into standardized YOLO coordinates and ingested with an automated **20% Validation Split**.
-*   **Retraining**: A single click initiates a background training thread that fine-tunes the existing model.
-
----
-
-## 🛠️ Infrastructure & Hardware Scaling Guide
-
-The TB-AFB Engine is designed to scale dynamically based on your available hardware.
-
-| Analysis Target | Recommended RAM | Recommended Compute |
-| :--- | :--- | :--- |
-| **Microscope Patches (JPG/PNG)** | 8GB - 16GB | 4-Core CPU / Any GPU |
-| **Standard WSI (1GB - 5GB .svs)** | 32GB - 64GB | 8-Core CPU / 8GB VRAM GPU |
-| **High-Res Pyramidal (10GB+ .ndpi)** | 128GB+ | 16-Core+ CPU / 16GB+ VRAM GPU |
-
-### Minimum Requirements
-*   **OS**: Windows 10/11, macOS Ventura+, or Ubuntu 22.04+
-*   **CPU**: Any modern 64-bit multi-core processor.
-*   **RAM**: 8GB Minimum (16GB+ highly recommended for active learning).
-*   **GPU**: Optional (CUDA 12+ or Apple Silicon M-Series for acceleration).
-*   **Drivers**: OpenSlide 3.4.1+ (Mandatory for WSI processing).
-
-### OS-Specific Setup (Install Medical Drivers)
-*   **macOS**: `brew install openslide`
-*   **Ubuntu/Debian**: `sudo apt install libopenslide0-dev`
-*   **Windows**: Download binaries from [OpenSlide.org](https://openslide.org/download/)
-
----
-
-## 🏃 Usage & Clinical Inference
-
-The system is now fully functional with an integrated secure inference pipeline.
-
-### Running Diagnostic Screening
-To analyze a Whole Slide Image (WSI) and generate a WHO-compliant report, use the localized `04_inference.py` script:
+Ubuntu/Debian:
 
 ```bash
-# Windows / macOS / Linux
-python 02_CODE/scripts/04_inference.py --model yolov8n.pt --wsi raw_wsi/your_slide.svs --conf 0.25
+sudo apt update
+sudo apt install libopenslide0 openslide-tools
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e 02_CODE
 ```
 
-### Interpreting the Diagnostic Report
-The engine outputs a standardized clinical quantitation:
-*   **Result**: Negative, Scanty, 1+, 2+, or 3+.
-*   **AFB Count**: Absolute number of identified bacilli.
-*   **Coverage**: Total tissue fields (HPF equivalent) analyzed.
+macOS:
 
----
+```bash
+brew install openslide
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e 02_CODE
+```
 
-## 🔬 Component Architecture (Verified)
+## Local web application
 
-1.  **Sliding Window Orchestrator**: Multi-threaded extraction of WSI regions with strict memory jailing.
-2.  **Neural Detector**: YOLOv8-based morphology recognition optimized for ZN-staining.
-3.  **Secure Postprocessor**: Vectorized Non-Maximum Suppression (NMS) and aspect-ratio validation to filter staining artifacts.
-4.  **WHO Grader**: Automated calculation of IUATLD/WHO smear grading scales.
+Start the API on loopback only:
 
----
+```bash
+python -m uvicorn 05_DEPLOYMENT.api.server:app --host 127.0.0.1 --port 8001
+```
 
-## 🛡️ Cyber Security & Data Privacy
-Designed with a **Security-First** mindset:
-1.  **Airtight Datalake Isolation**: All file operations are strictly jailed to the `01_DATA` directory via `secure_file_resolution`.
-2.  **Verified Checkpoint Guard**: Implements `weights_only=True` loading blocks to prevent arbitrary code execution (RCE).
-3.  **Resource Guard**: Implements `try...finally` resource management to prevent File Descriptor exhaustion and DoS attacks.
-4.  **Privacy-First Datalake**: Built-in protection ensures no patient data is exposed to version control.
+Open:
 
-## ⚖️ License
-Distributed under the **Apache License 2.0**. See `LICENSE` for more information.
+- Screening UI: `http://127.0.0.1:8001/ui/`
+- Annotation UI: `http://127.0.0.1:8001/ui/annotate.html`
+- Health endpoint: `http://127.0.0.1:8001/api/v1/health`
 
----
-*For clinical inquiries or technical support, please refer to the documentation or contact the developer.*
+The web API rejects undecodable uploads instead of interpreting them as negative results. Complex OpenSlide WSI formats are handled by the CLI rather than the patch-image upload endpoint.
+
+## WSI inference
+
+Place slides below `01_DATA/raw_wsi/` and use a **trusted local** `.pt` checkpoint:
+
+```bash
+python 02_CODE/scripts/04_inference.py \
+  --model /path/to/trusted/best.pt \
+  --wsi raw_wsi/example.svs \
+  --conf 0.25
+```
+
+WHO/IUATLD Ziehl-Neelsen smear grading depends on the number of microscope fields actually examined. The CLI therefore does not infer a grade from slide area. If a valid field count is known from the acquisition protocol, provide it explicitly:
+
+```bash
+python 02_CODE/scripts/04_inference.py \
+  --model /path/to/trusted/best.pt \
+  --wsi raw_wsi/example.svs \
+  --fields-examined 100
+```
+
+## Training
+
+The default dataset configuration is `02_CODE/data.yaml`.
+
+```bash
+python 02_CODE/scripts/generate_dummy.py
+python 02_CODE/scripts/check_data_integrity.py
+python 02_CODE/scripts/02_train.py --data data.yaml --epochs 10 --batch 4
+```
+
+Do not treat the synthetic generator as validation data for model performance.
+
+## Docker
+
+The Compose configuration publishes the service only on `127.0.0.1:8001` by default:
+
+```bash
+docker compose up --build
+```
+
+GPU container configuration is host-specific and is intentionally not enabled by default.
+
+## Testing
+
+```bash
+python -m pip install -r requirements-dev.txt
+pytest -q
+python -m compileall 02_CODE 05_DEPLOYMENT
+```
+
+CI also performs a dependency vulnerability audit with `pip-audit`.
+
+## Data handling and privacy
+
+`01_DATA/`, `03_MODELS/`, `runs/`, and `06_LOGS/` are excluded from version control apart from optional placeholder files. The application does not intentionally transmit uploaded microscopy data to an external service. The WSI viewer loads OpenSeadragon from jsDelivr, so opening that viewer makes a normal browser request to that CDN.
+
+Avoid placing patient-identifiable information in filenames, logs, annotations, or exported research reports.
+
+## GitHub Pages
+
+GitHub Pages is not an appropriate deployment target for the complete application. The working system requires FastAPI, PyTorch, OpenCV, OpenSlide/native libraries, local file storage, and optional GPU acceleration; those server-side/native requirements cannot run as a normal Pages site.
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md). Model checkpoint files are deserialization inputs and should be loaded only from trusted sources.
+
+## License
+
+Apache License 2.0. See [`LICENSE`](LICENSE).

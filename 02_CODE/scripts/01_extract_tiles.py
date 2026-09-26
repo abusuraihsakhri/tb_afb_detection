@@ -1,90 +1,107 @@
-import os
 import argparse
-from pathlib import Path
+import os
 import sys
-import numpy as np
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+
 import cv2
+import numpy as np
 
-# Secure path initialization
-current_dir = Path(__file__).resolve().parent
-src_dir = current_dir.parent / "src"
-sys.path.append(str(src_dir))
-
-from tb_afb.utils.logger import AuditLogger
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(SRC_DIR))
 
 try:
     import openslide
     OPENSLIDE_AVAILABLE = True
 except ImportError:
+    openslide = None
     OPENSLIDE_AVAILABLE = False
-    print("[WARNING] OpenSlide binaries missing. Only small TIFF/JPG WSIs will process via Fallback.")
 
-from concurrent.futures import ProcessPoolExecutor
 
-def process_single_tile(slide_path, x, y, patch_size, output_dir, basename):
-    """Worker function for multi-processed tile extraction."""
-    import openslide
-    import numpy as np
-    import cv2
-    
+def process_single_tile(slide_path: str, x: int, y: int, patch_size: int, output_dir: str, basename: str) -> int:
+    if not OPENSLIDE_AVAILABLE:
+        raise RuntimeError("OpenSlide is not available in the worker process.")
+
     slide = openslide.OpenSlide(slide_path)
-    rgba_img = slide.read_region((x, y), 0, (patch_size, patch_size))
-    img = cv2.cvtColor(np.array(rgba_img), cv2.COLOR_RGBA2BGR)
-    
-    # Tissue check
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    if cv2.countNonZero(gray) > 0 and np.mean(gray) < 220:
-        tile_name = output_dir / f"{basename}_{x}_{y}.jpg"
-        cv2.imwrite(str(tile_name), img)
-        return 1
-    return 0
+    try:
+        rgba = slide.read_region((x, y), 0, (patch_size, patch_size))
+        img = cv2.cvtColor(np.asarray(rgba), cv2.COLOR_RGBA2BGR)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if cv2.countNonZero(gray) > 0 and np.mean(gray) < 220:
+            tile_name = Path(output_dir) / f"{basename}_{x}_{y}.jpg"
+            if not cv2.imwrite(str(tile_name), img):
+                raise OSError(f"Failed to write tile: {tile_name}")
+            return 1
+        return 0
+    finally:
+        slide.close()
 
-def extract_wsi_patches(wsi_path: Path, output_dir: Path, patch_size: int = 512, overlap: int = 0):
+
+def _process_single_tile_args(args) -> int:
+    return process_single_tile(*args)
+
+
+def extract_wsi_patches(wsi_path: Path, output_dir: Path, patch_size: int = 512, overlap: int = 0) -> int:
+    if patch_size <= 0:
+        raise ValueError("patch_size must be positive.")
+    if overlap < 0 or overlap >= patch_size:
+        raise ValueError("overlap must satisfy 0 <= overlap < patch_size.")
+    if not wsi_path.is_file():
+        raise FileNotFoundError(wsi_path)
+
     output_dir.mkdir(parents=True, exist_ok=True)
     basename = wsi_path.stem
-    
-    if OPENSLIDE_AVAILABLE and wsi_path.suffix.lower() in [".svs", ".ndpi", ".vms", ".scn"]:
+    step = patch_size - overlap
+
+    if OPENSLIDE_AVAILABLE and wsi_path.suffix.lower() in {".svs", ".ndpi", ".vms", ".vmu", ".scn", ".bif", ".mrxs"}:
         slide = openslide.OpenSlide(str(wsi_path))
-        w, h = slide.dimensions
-        step = patch_size - overlap
-        
-        # 🛡️ SYSTEM OPTIMIZATION: Multi-core Process Orchestration
-        tasks = []
-        for y in range(0, h, step):
-            for x in range(0, w, step):
-                if (x + patch_size <= w) and (y + patch_size <= h):
-                    tasks.append((str(wsi_path), x, y, patch_size, output_dir, basename))
-        
-        print(f"[{basename}] Dispatching {len(tasks)} extraction tasks to Multi-core Engine...")
-        
-        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-            results = list(executor.map(lambda p: process_single_tile(*p), tasks))
-            
-        print(f"Extraction successful: {sum(results)} tissue tiles securely exported.")
-    else:
-        # Standard Fallback (Single-threaded for safety on small TIFFs)
-        img = cv2.imread(str(wsi_path))
-        if img is None: return
-        h, w = img.shape[:2]
-        step = patch_size - overlap
-        count = 0
-        for y in range(0, h, step):
-            for x in range(0, w, step):
-                if (x + patch_size <= w) and (y + patch_size <= h):
-                    patch = img[y:y+patch_size, x:x+patch_size]
-                    if np.mean(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)) < 230:
-                        cv2.imwrite(str(output_dir / f"{basename}_{x}_{y}.jpg"), patch)
-                        count += 1
-        print(f"Fallback complete: {count} tiles exported.")
+        try:
+            width, height = slide.dimensions
+        finally:
+            slide.close()
+
+        tasks = [
+            (str(wsi_path), x, y, patch_size, str(output_dir), basename)
+            for y in range(0, height - patch_size + 1, step)
+            for x in range(0, width - patch_size + 1, step)
+        ]
+        workers = max(1, min(os.cpu_count() or 1, 8))
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            written = sum(executor.map(_process_single_tile_args, tasks, chunksize=8))
+        return written
+
+    image = cv2.imread(str(wsi_path), cv2.IMREAD_COLOR)
+    if image is None:
+        raise ValueError(f"Could not decode image: {wsi_path.name}")
+    height, width = image.shape[:2]
+    written = 0
+    for y in range(0, height - patch_size + 1, step):
+        for x in range(0, width - patch_size + 1, step):
+            patch = image[y : y + patch_size, x : x + patch_size]
+            if np.mean(cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)) < 230:
+                tile_name = output_dir / f"{basename}_{x}_{y}.jpg"
+                if not cv2.imwrite(str(tile_name), patch):
+                    raise OSError(f"Failed to write tile: {tile_name}")
+                written += 1
+    return written
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--wsi", required=True, help="Path to an input slide or image")
+    parser.add_argument("--out", default="01_DATA/raw_tiles", help="Output tile directory")
+    parser.add_argument("--size", type=int, default=512, help="Patch dimension")
+    parser.add_argument("--overlap", type=int, default=0, help="Tile overlap in pixels")
+    args = parser.parse_args()
+
+    written = extract_wsi_patches(
+        Path(args.wsi).expanduser().resolve(),
+        Path(args.out).expanduser().resolve(),
+        args.size,
+        args.overlap,
+    )
+    print(f"Extraction complete: {written} tissue tiles written.")
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--wsi", type=str, required=True, help="Path to absolute WSI file (.svs/.ndpi)")
-    parser.add_argument("--out", type=str, default="01_DATA/raw_tiles", help="Output directory safely routed")
-    parser.add_argument("--size", type=int, default=512, help="Patch Dimension (e.g. 512)")
-    args = parser.parse_args()
-    
-    safe_root = Path().resolve()
-    wsi_target = Path(args.wsi).resolve()
-    
-    extract_wsi_patches(wsi_target, Path(args.out).resolve(), args.size)
+    main()

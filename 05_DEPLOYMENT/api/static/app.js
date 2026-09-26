@@ -5,193 +5,132 @@ const statusText = document.getElementById('status-text');
 const resultsPanel = document.getElementById('results-panel');
 const canvas = document.getElementById('slide-canvas');
 const ctx = canvas.getContext('2d');
-
 const hwStatus = document.getElementById('hw-status');
-const downloadBtn = document.getElementById('download-btn');
 const wsiLink = document.getElementById('wsi-viewer-link');
 
 let uploadedImage = new Image();
 let lastAnalysisData = null;
 let currentFile = null;
 
-// Visual feedback for debugging
-function debugLog(msg) {
-    statusText.textContent = msg;
+function setStatus(message) {
+    statusText.textContent = message;
     statusBar.style.display = 'flex';
-    console.log("[UI Logic]:", msg);
 }
 
-dropZone.addEventListener('click', () => {
-    debugLog("Click intercepted. Opening hidden file dialog...");
-    fileInput.click();
+function preventDefaults(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => dropZone.addEventListener(name, preventDefaults));
+['dragenter', 'dragover'].forEach(name => dropZone.addEventListener(name, () => {
+    dropZone.style.borderColor = 'var(--accent-vibrant)';
+}));
+['dragleave', 'drop'].forEach(name => dropZone.addEventListener(name, () => {
+    dropZone.style.borderColor = 'var(--border-color)';
+}));
+
+dropZone.addEventListener('drop', event => {
+    if (event.dataTransfer?.files?.length) handleFile(event.dataTransfer.files[0]);
 });
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'var(--accent-vibrant)', false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => dropZone.style.borderColor = 'var(--border-color)', false);
-});
-
-dropZone.addEventListener('drop', (e) => {
-    debugLog("Item dropped into zone. Extracting file...");
-    const dt = e.dataTransfer;
-    if (dt && dt.files && dt.files.length > 0) {
-        handleFile(dt.files[0]);
-    } else {
-        alert("The dragged item wasn't recognized as a valid file.");
-    }
-}, false);
-
-fileInput.addEventListener('change', (e) => {
-    debugLog("File input changed. Extracting file payload...");
-    if (e.target.files && e.target.files.length > 0) {
-        handleFile(e.target.files[0]);
-    } else {
-         debugLog("File input was empty or canceled.");
-    }
+fileInput.addEventListener('change', event => {
+    if (event.target.files?.length) handleFile(event.target.files[0]);
 });
 
 function handleFile(file) {
-    if (!file) {
-        alert("No file reference detected by the browser.");
-        return;
-    }
-    currentFile = file;
-    
-    debugLog(`File captured recursively: ${file.name} - ${file.size} bytes`);
-    
-    // Medical format allowed validation strictly matched against requested inputs
     const filename = file.name.toLowerCase();
-    const validExts = [
-        "jpg", "jpeg", "png", 
-        "tiff", "tif", "ptif", "ptiff", "ome.tif", "ome.tiff",
-        "jp2", "j2k", "jpf", "jpx",
-        "svs", "ndpi", "vms", "vmu", "scn", "bif", "mrxs",
-        "dicom", "dcm"
-    ];
-    
-    let isValid = false;
-    for (const ext of validExts) {
-        if (filename.endsWith('.' + ext)) {
-            isValid = true;
-            break;
-        }
-    }
-    
-    if (!isValid) {
-        alert(`Clinical rejection: Unsupported format (${filename}). Provide microscopy compatible extensions.`);
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.jp2', '.j2k', '.jpf', '.jpx'];
+    if (!validExtensions.some(ext => filename.endsWith(ext))) {
+        alert('Unsupported web-UI format. Use the CLI WSI workflow for SVS/NDPI and other OpenSlide formats.');
         return;
     }
-    
+
+    currentFile = file;
     dropZone.style.display = 'none';
     resultsPanel.style.display = 'none';
-    statusText.textContent = `Attempting Frontend Render for ${filename}...`;
+    setStatus(`Preparing ${file.name}...`);
 
-    if (filename.endsWith('.jpg') || filename.endsWith('.jpeg') || filename.endsWith('.png') || filename.endsWith('.webp')) {
+    if (['.jpg', '.jpeg', '.png'].some(ext => filename.endsWith(ext))) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = event => {
             uploadedImage.onload = () => {
                 canvas.width = uploadedImage.naturalWidth;
                 canvas.height = uploadedImage.naturalHeight;
                 ctx.drawImage(uploadedImage, 0, 0);
                 submitForInference(file);
-            }
-            uploadedImage.onerror = () => {
-                 alert("Local Browser failed to draw image onto canvas correctly.");
-                 submitForInference(file); // try offloading anyway
             };
-            uploadedImage.src = e.target.result;
-        }
-        reader.onerror = () => alert("FileReader failed to access file payload.");
+            uploadedImage.onerror = () => submitForInference(file);
+            uploadedImage.src = event.target.result;
+        };
+        reader.onerror = () => {
+            alert('The browser could not read this file.');
+            resetUI();
+        };
         reader.readAsDataURL(file);
     } else {
-        ctx.clearRect(0,0, canvas.width, canvas.height);
         canvas.width = 600;
         canvas.height = 300;
-        ctx.fillStyle = "#f1f5f9";
-        ctx.fillRect(0,0, 600, 300);
-        ctx.font = "18px Outfit";
-        ctx.fillStyle = "#64748b";
-        ctx.textAlign = "center";
-        ctx.fillText(`Raw Complex Format (${filename}) sent to GPU Image Stack...`, 300, 150);
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Preview will be decoded by the local server.', 300, 150);
         submitForInference(file);
     }
 }
 
 async function submitForInference(file) {
-    statusText.textContent = "Negotiating Secure Fetch -> FastAPI backend...";
-    
+    setStatus('Running local research inference...');
     const formData = new FormData();
     formData.append('file', file);
 
     try {
         const response = await fetch('/api/v1/analyze', { method: 'POST', body: formData });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || `HTTP ${response.status}`);
 
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || `Server responded with status ${response.status}`);
-        }
-
-        const data = await response.json();
-        statusText.textContent = "Data successfully received! Rendering Dashboard...";
-        
         lastAnalysisData = {
             filename: currentFile.name,
-            grade: data.grade,
-            count: data.detections.length,
-            hardware: data.hardware
+            grade: payload.grade,
+            count: payload.detections.length,
+            hardware: payload.hardware,
         };
-
-        if (currentFile.name.toLowerCase().endsWith('.svs') || currentFile.name.toLowerCase().endsWith('.ndpi') || currentFile.name.toLowerCase().endsWith('.tiff')) {
-             wsiLink.style.display = 'inline';
-             wsiLink.href = `viewer.html?id=${currentFile.name}`;
-        } else {
-             wsiLink.style.display = 'none';
-        }
-
-        renderResults(data);
+        wsiLink.style.display = payload.wsi_id ? 'inline' : 'none';
+        if (payload.wsi_id) wsiLink.href = `viewer.html?id=${encodeURIComponent(payload.wsi_id)}`;
+        renderResults(payload);
     } catch (error) {
-        alert("API Processing Error: " + error.message);
+        alert(`Processing error: ${error.message}`);
         resetUI();
     }
 }
 
 document.getElementById('download-btn').addEventListener('click', async () => {
     if (!lastAnalysisData) return;
-    
-    statusText.textContent = "Generating Secure Clinical PDF...";
-    statusBar.style.display = 'flex';
-    
-    const pathologistName = document.getElementById('pathologist-name').value || "Not Specified";
-    
+    setStatus('Generating local PDF report...');
+    const pathologistName = document.getElementById('pathologist-name').value || 'Not specified';
+
     try {
-        const resp = await fetch("/api/v1/export_report", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...lastAnalysisData, pathologist_name: pathologistName })
+        const response = await fetch('/api/v1/export_report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...lastAnalysisData, pathologist_name: pathologistName }),
         });
-        
-        if (!resp.ok) throw new Error("Report generation failed.");
-        
-        const blob = await resp.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `TB_Report_${lastAnalysisData.filename.split('.')[0]}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        statusBar.style.display = 'none';
-    } catch (err) {
-        alert(err.message);
+        if (!response.ok) throw new Error('Report generation failed.');
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `TB_AFB_Research_${lastAnalysisData.filename.split('.')[0]}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        alert(error.message);
+    } finally {
         statusBar.style.display = 'none';
     }
 });
@@ -199,39 +138,43 @@ document.getElementById('download-btn').addEventListener('click', async () => {
 function renderResults(data) {
     statusBar.style.display = 'none';
     resultsPanel.style.display = 'block';
-    
-    document.getElementById('who-grade').textContent = String(data.grade).replace(/[<>]/g, "");
-    hwStatus.firstElementChild.textContent = String(data.hardware).replace(/[<>]/g, "");
-    
-    let defCount = 0;
-    let posCount = 0;
-    
+    document.getElementById('who-grade').textContent = String(data.grade);
+    hwStatus.firstElementChild.textContent = String(data.hardware);
+
+    let definiteCount = 0;
+    let possibleCount = 0;
+    const confidences = [];
+
     data.detections.forEach(det => {
-        const [cx, cy, w, h] = det.bbox;
-        const x = cx - w/2;
-        const y = cy - h/2;
-        
+        const [cx, cy, width, height] = det.bbox;
+        const x = cx - width / 2;
+        const y = cy - height / 2;
+        const confidence = Number(det.confidence);
+        if (Number.isFinite(confidence)) confidences.push(confidence);
+
         ctx.beginPath();
         ctx.lineWidth = 3;
-        
         if (det.class_id === 0) {
-            ctx.strokeStyle = '#dc2626'; // Danger/Definite Red
-            defCount++;
+            ctx.strokeStyle = '#dc2626';
+            definiteCount += 1;
         } else {
-            ctx.strokeStyle = '#f59e0b'; // Possible Orange
-            posCount++;
+            ctx.strokeStyle = '#f59e0b';
+            possibleCount += 1;
         }
-        
-        ctx.rect(x, y, w, h);
+        ctx.rect(x, y, width, height);
         ctx.stroke();
     });
 
-    document.getElementById('count-definite').textContent = defCount;
-    document.getElementById('count-possible').textContent = posCount;
-    document.getElementById('conf-range').textContent = (defCount + posCount) > 0 ? "75% - 94%" : "--";
+    document.getElementById('count-definite').textContent = definiteCount;
+    document.getElementById('count-possible').textContent = possibleCount;
+    const confidenceText = confidences.length
+        ? `${(Math.min(...confidences) * 100).toFixed(1)}% - ${(Math.max(...confidences) * 100).toFixed(1)}%`
+        : '--';
+    document.getElementById('conf-range').textContent = confidenceText;
 }
 
 function resetUI() {
     dropZone.style.display = 'block';
     statusBar.style.display = 'none';
+    resultsPanel.style.display = 'none';
 }

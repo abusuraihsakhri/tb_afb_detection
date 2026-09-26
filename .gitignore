@@ -1,33 +1,33 @@
-# 🛡️ GLOBAL TB-AFB CLINICAL DATALAKE PROTECTION
-
-# Clinical Binary Block (Never commit patient WSIs)
+# Local data and patient-derived material
 01_DATA/raw_wsi/*
 01_DATA/raw_tiles/*
 01_DATA/processed_tiles/*
 !01_DATA/.gitkeep
 
-# Neural Logic Weights (Commit only base architectures if needed)
+# Trained model outputs
 03_MODELS/*
 runs/*
 !03_MODELS/.gitkeep
 
-# Clinical Audit Logs (Prevent PHI leak in logs)
+# Logs
 06_LOGS/*
 *.log
 !06_LOGS/.gitkeep
 
-# Python Environment & Junk
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
 venv/
+.venv/
 .env
 .ipynb_checkpoints/
 
-# System-Specific (OSX/Windows metadata)
+# OS / editors
 .DS_Store
 Thumbs.db
-
-# IDE (VS Code / PyCharm)
 .vscode/
 .idea/
