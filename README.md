@@ -151,7 +151,9 @@ The UI is intended for current desktop versions of Chrome, Edge, Firefox, and Sa
 
 ## GitHub Pages and browser Python
 
-GitHub Pages is not used for the application. The main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs. Those requirements are not a practical fit for a static Pages/Pyodide deployment.
+A static project showcase is provided under `docs/` for GitHub Pages. It documents the research purpose, workflow, architecture, safeguards, limitations, and local-use path; configure Pages to publish from `main` → `/docs`.
+
+The computational application itself remains local/server-side. Its main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs, so the application is not a practical fit for a static Pages/Pyodide deployment.
 
 ## License
 
