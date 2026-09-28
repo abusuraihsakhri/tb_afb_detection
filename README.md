@@ -4,6 +4,8 @@ Research and development toolkit for tiled acid-fast bacilli (AFB) candidate det
 
 > **Research use only.** This repository is not a validated medical device and does not provide a diagnostic result. Model and heuristic detections are candidates that require expert review.
 
+The `docs/` directory contains an interactive static project website that demonstrates the pipeline with a synthetic microscopy field, confidence-threshold controls, and candidate overlays. It is a browser-only explanation of the workflow, not model inference.
+
 ## What is included
 
 - Local FastAPI web application for raster-image screening and annotation.
@@ -149,11 +151,13 @@ Core components are Python, PyTorch/Ultralytics, OpenCV, OpenSlide, FastAPI, Num
 
 The UI is intended for current desktop versions of Chrome, Edge, Firefox, and Safari; there is no automated cross-browser test suite. WSI support additionally depends on the local OpenSlide installation and the slide vendor format.
 
-## GitHub Pages and browser Python
+## GitHub Pages project website
 
-A static project showcase is provided under `docs/` for GitHub Pages. It documents the research purpose, workflow, architecture, safeguards, limitations, and local-use path; configure Pages to publish from `main` → `/docs`.
+An interactive project website is provided under `docs/`. It demonstrates image loading, tiling, candidate scoring, confidence filtering, post-processing, and expert review using a deterministic synthetic microscopy field rendered with browser JavaScript and Canvas. No image is uploaded and no medical inference occurs on the Pages site.
 
-The computational application itself remains local/server-side. Its main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs, so the application is not a practical fit for a static Pages/Pyodide deployment.
+Publish the site from `main` → `/docs`. A root `index.html` redirect is also included so the project remains navigable if the repository root is selected as the publishing source.
+
+The real computational application remains local/server-side. Its main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs, so it is not a practical fit for a static Pages/Pyodide deployment.
 
 ## License
 
