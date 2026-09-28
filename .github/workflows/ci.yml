@@ -39,7 +39,7 @@ jobs:
           test -s docs/index.html
           test -s docs/styles.css
           test -s docs/demo.js
-          test -s docs/.nojekyll
+          test -e docs/.nojekyll
           test -s index.html
           grep -q "Run interactive demo" docs/index.html
           grep -q "demo.js" docs/index.html
