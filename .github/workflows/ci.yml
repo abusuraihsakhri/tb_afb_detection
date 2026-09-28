@@ -33,7 +33,16 @@ jobs:
       - name: Launcher syntax
         run: bash -n Start_Detection_Engine.sh Start_Annotation_Engine.sh
       - name: Browser JavaScript syntax
-        run: node --check 05_DEPLOYMENT/api/static/app.js && node --check 05_DEPLOYMENT/api/static/annotate.js
+        run: node --check 05_DEPLOYMENT/api/static/app.js && node --check 05_DEPLOYMENT/api/static/annotate.js && node --check docs/demo.js
+      - name: Pages showcase smoke test
+        run: |
+          test -s docs/index.html
+          test -s docs/styles.css
+          test -s docs/demo.js
+          test -e docs/.nojekyll
+          test -s index.html
+          grep -q "Run interactive demo" docs/index.html
+          grep -q "demo.js" docs/index.html
       - name: Compose validation
         run: docker compose config --quiet
       - name: Core unit tests

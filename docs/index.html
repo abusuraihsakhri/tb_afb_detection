@@ -3,24 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="TB AFB Detection research toolkit for acid-fast bacilli candidate detection in Ziehl-Neelsen microscopy images and whole-slide images.">
-  <title>TB AFB Detection — Research Toolkit</title>
+  <meta name="description" content="Interactive project website for the TB AFB Detection research toolkit, demonstrating the microscopy and whole-slide candidate-detection workflow.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>TB AFB Detection — Interactive Project Demo</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-
   <header class="site-header">
     <div class="shell nav">
-      <a class="brand" href="./" aria-label="TB AFB Detection home">
-        <span class="brand-mark" aria-hidden="true">AFB</span>
-        <span>TB AFB Detection</span>
-      </a>
-      <nav aria-label="Primary">
-        <a href="#workflow">Workflow</a>
-        <a href="#scope">Scope</a>
-        <a href="#validation">Validation</a>
-        <a href="https://github.com/abusuraihsakhri/tb_afb_detection">Repository</a>
+      <a class="brand" href="./" aria-label="TB AFB Detection home"><span class="brand-mark" aria-hidden="true">AFB</span><span>TB AFB Detection</span></a>
+      <nav aria-label="Primary navigation">
+        <a href="#demo">Demo</a><a href="#workflow">Workflow</a><a href="#architecture">Architecture</a><a href="#validation">Validation</a><a href="https://github.com/abusuraihsakhri/tb_afb_detection">GitHub</a>
       </nav>
     </div>
   </header>
@@ -29,188 +23,104 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <p class="eyebrow">Digital pathology research</p>
-          <h1>AFB candidate detection for microscopy and whole-slide workflows</h1>
-          <p class="lede">
-            A local research toolkit for tiled Ziehl-Neelsen image analysis, YOLO training,
-            whole-slide inference, annotation, post-processing, and field-based smear grading utilities.
-          </p>
+          <p class="eyebrow">Digital pathology research toolkit</p>
+          <h1>See how TB AFB candidate detection works</h1>
+          <p class="lede">This project website demonstrates the full workflow: microscopy or whole-slide input, tiling, candidate detection, post-processing, and expert review.</p>
           <div class="actions">
-            <a class="button primary" href="https://github.com/abusuraihsakhri/tb_afb_detection">View repository</a>
-            <a class="button secondary" href="#quickstart">Local quick start</a>
+            <a class="button primary" href="#demo">Run interactive demo</a>
+            <a class="button secondary" href="https://github.com/abusuraihsakhri/tb_afb_detection">View source code</a>
           </div>
-          <p class="research-note">
-            <strong>Research use only.</strong> The repository is not a validated medical device and does not provide a diagnostic result.
-          </p>
+          <p class="research-note"><strong>Research use only.</strong> The browser demo below is illustrative and does not run the trained Python/YOLO pipeline or provide a diagnostic result.</p>
         </div>
-
-        <div class="hero-panel" aria-label="Project capability summary">
-          <div class="panel-bar">
-            <span></span><span></span><span></span>
-            <strong>TB-AFB research pipeline</strong>
-          </div>
+        <aside class="hero-panel" aria-label="Pipeline summary">
+          <div class="panel-label">PROJECT PIPELINE</div>
           <div class="pipeline">
-            <div class="pipeline-step"><span>01</span><div><strong>Acquire</strong><small>Raster image or OpenSlide WSI</small></div></div>
-            <div class="pipeline-step"><span>02</span><div><strong>Tile</strong><small>Bounded fixed-size regions</small></div></div>
-            <div class="pipeline-step"><span>03</span><div><strong>Detect</strong><small>YOLO checkpoint or labeled heuristic fallback</small></div></div>
-            <div class="pipeline-step"><span>04</span><div><strong>Review</strong><small>Candidate visualization and annotation</small></div></div>
+            <div class="pipeline-step"><span>01</span><div><strong>Input</strong><small>Microscopy raster or WSI</small></div></div>
+            <div class="pipeline-step"><span>02</span><div><strong>Tile</strong><small>Fixed-size overlapping regions</small></div></div>
+            <div class="pipeline-step"><span>03</span><div><strong>Detect</strong><small>YOLO model or labeled heuristic fallback</small></div></div>
+            <div class="pipeline-step"><span>04</span><div><strong>Post-process</strong><small>Confidence filtering and global NMS</small></div></div>
+            <div class="pipeline-step"><span>05</span><div><strong>Review</strong><small>Human inspection and annotation</small></div></div>
           </div>
-          <div class="panel-foot">
-            <span>FastAPI</span><span>PyTorch</span><span>Ultralytics</span><span>OpenSlide</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section compact" aria-label="Project status">
-      <div class="shell stats">
-        <article><strong>Python 3.10 / 3.12</strong><span>CI-tested versions</span></article>
-        <article><strong>Local-first</strong><span>Data and model workflows</span></article>
-        <article><strong>WSI + raster</strong><span>OpenSlide and OpenCV paths</span></article>
-        <article><strong>24 tests</strong><span>Current regression suite</span></article>
-      </div>
-    </section>
-
-    <section class="section" id="workflow">
-      <div class="shell">
-        <div class="section-heading">
-          <p class="eyebrow">Workflow</p>
-          <h2>From microscopy image to reviewed candidates</h2>
-          <p>The repository separates data preparation, model training, inference, post-processing, and human review.</p>
-        </div>
-
-        <div class="cards four">
-          <article class="card">
-            <span class="card-index">01</span>
-            <h3>Tile extraction</h3>
-            <p>OpenSlide-native WSI extraction and OpenCV raster fallback generate fixed-size research tiles.</p>
-          </article>
-          <article class="card">
-            <span class="card-index">02</span>
-            <h3>Training</h3>
-            <p>Ultralytics YOLO training supports CPU, CUDA, or Apple MPS when available in the installed PyTorch build.</p>
-          </article>
-          <article class="card">
-            <span class="card-index">03</span>
-            <h3>Inference</h3>
-            <p>Sliding-window inference translates tile detections to slide coordinates and applies global post-processing.</p>
-          </article>
-          <article class="card">
-            <span class="card-index">04</span>
-            <h3>Annotation</h3>
-            <p>The local browser interface stores normalized YOLO annotations into train and validation splits.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section muted" id="scope">
-      <div class="shell split">
-        <div>
-          <p class="eyebrow">Architecture</p>
-          <h2>Why the application itself is not hosted on Pages</h2>
-          <p>
-            GitHub Pages serves this static project site. The computational application remains local because
-            its primary workflow requires a Python API process, PyTorch/Ultralytics, native OpenSlide libraries,
-            local files and model checkpoints, and potentially large whole-slide images.
-          </p>
-          <p>
-            Pages therefore documents and showcases the project without pretending to execute the backend in-browser.
-          </p>
-        </div>
-
-        <div class="stack">
-          <div class="stack-item"><strong>Static Pages layer</strong><span>Project overview, architecture, usage, limitations, repository navigation</span></div>
-          <div class="stack-arrow" aria-hidden="true">↓</div>
-          <div class="stack-item"><strong>Local FastAPI layer</strong><span>Raster screening, annotation, reporting, DeepZoom tile service</span></div>
-          <div class="stack-arrow" aria-hidden="true">↓</div>
-          <div class="stack-item"><strong>Research compute layer</strong><span>PyTorch / Ultralytics / OpenSlide / local checkpoint and WSI processing</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="validation">
-      <div class="shell split">
-        <div>
-          <p class="eyebrow">Validation boundary</p>
-          <h2>Candidate detection is not smear grading</h2>
-          <p>
-            Model and heuristic outputs are candidate detections for expert review. The inference workflow deliberately
-            does not convert model candidates into WHO/IUATLD smear grades.
-          </p>
-          <p>
-            The repository includes a separate grading utility for confirmed microscopy counts when an appropriate
-            examined-field protocol is available.
-          </p>
-        </div>
-
-        <aside class="notice-card">
-          <h3>Included safeguards</h3>
-          <ul>
-            <li>Bounded HTTP body and decoded-image sizes</li>
-            <li>Path containment for configured data roots</li>
-            <li>Normalized annotation bounds validation</li>
-            <li>Localhost-first service defaults</li>
-            <li>Training trigger disabled by default</li>
-            <li>Dependency auditing in CI</li>
-          </ul>
         </aside>
       </div>
     </section>
 
-    <section class="section muted" id="quickstart">
+    <section class="section demo-section" id="demo">
       <div class="shell">
         <div class="section-heading">
-          <p class="eyebrow">Local use</p>
-          <h2>Quick start</h2>
+          <p class="eyebrow">Interactive demonstration</p>
+          <h2>Explore the candidate-detection pipeline</h2>
+          <p>The synthetic field is rendered entirely in your browser. Adjust the confidence threshold and run the demonstration to see which illustrative detections survive post-processing.</p>
         </div>
+        <div class="demo-layout">
+          <section class="demo-controls" aria-label="Demo controls">
+            <div class="demo-badge">Illustrative browser simulation</div>
+            <h3>Controls</h3>
+            <label class="slider-label" for="threshold">Confidence threshold <output id="threshold-value" for="threshold">0.60</output></label>
+            <input id="threshold" type="range" min="0.40" max="0.90" step="0.05" value="0.60">
+            <div class="button-row">
+              <button class="button primary" id="run-demo" type="button">Run demonstration</button>
+              <button class="button secondary" id="reset-demo" type="button">Reset</button>
+            </div>
+            <div class="stage-list" aria-label="Pipeline stages">
+              <div class="stage" data-stage="input"><span>1</span><div><strong>Load image</strong><small>Microscopy field selected</small></div></div>
+              <div class="stage" data-stage="tile"><span>2</span><div><strong>Tile field</strong><small>Regions prepared for inference</small></div></div>
+              <div class="stage" data-stage="detect"><span>3</span><div><strong>Detect candidates</strong><small>Illustrative scores generated</small></div></div>
+              <div class="stage" data-stage="post"><span>4</span><div><strong>Post-process</strong><small>Threshold + overlap filtering</small></div></div>
+              <div class="stage" data-stage="review"><span>5</span><div><strong>Review</strong><small>Candidate boxes presented</small></div></div>
+            </div>
+            <p class="demo-note">No image is uploaded and no medical inference occurs on this page. The real application runs locally through FastAPI, PyTorch/Ultralytics, and OpenSlide.</p>
+          </section>
 
-        <div class="code-grid">
-          <div>
-            <h3>Install</h3>
-            <pre><code>python -m pip install -r requirements.txt</code></pre>
-          </div>
-          <div>
-            <h3>Run the local API</h3>
-            <pre><code>python -m uvicorn 05_DEPLOYMENT.api.server:app \
-  --host 127.0.0.1 --port 8001</code></pre>
-          </div>
-          <div>
-            <h3>Open the screening UI</h3>
-            <pre><code>http://127.0.0.1:8001/ui/</code></pre>
-          </div>
-          <div>
-            <h3>Check dataset integrity</h3>
-            <pre><code>python 02_CODE/scripts/check_data_integrity.py</code></pre>
-          </div>
+          <section class="demo-visual" aria-label="Synthetic microscopy demonstration">
+            <div class="viewer-bar"><div><strong>Synthetic Ziehl-Neelsen field</strong><span id="demo-status">Ready</span></div><span class="viewer-chip">browser-only</span></div>
+            <div class="canvas-wrap"><canvas id="demo-canvas" width="960" height="600" aria-label="Synthetic microscopy field with illustrative AFB candidate boxes"></canvas></div>
+            <div class="demo-metrics" aria-live="polite">
+              <article><span>Retained candidates</span><strong id="candidate-count">0</strong></article>
+              <article><span>Highest score</span><strong id="highest-score">—</strong></article>
+              <article><span>Threshold</span><strong id="metric-threshold">0.60</strong></article>
+              <article><span>Output</span><strong>Expert review</strong></article>
+            </div>
+          </section>
         </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="shell callout">
-        <div>
-          <p class="eyebrow">Source and documentation</p>
-          <h2>Inspect the implementation</h2>
-          <p>The repository contains the source, tests, security model, local launchers, Docker configuration, and research-use documentation.</p>
+    <section class="section muted" id="workflow">
+      <div class="shell">
+        <div class="section-heading"><p class="eyebrow">Implementation workflow</p><h2>How the repository processes images</h2><p>The website mirrors the actual code paths without pretending that GitHub Pages can execute the server-side model.</p></div>
+        <div class="cards five">
+          <article class="card"><span class="card-index">01</span><h3>Image / WSI loading</h3><p>Raster images use OpenCV. Supported whole-slide formats use OpenSlide for level-aware access.</p><code>data/wsi_loader.py</code></article>
+          <article class="card"><span class="card-index">02</span><h3>Tiling</h3><p>Large slides are divided into bounded tiles so inference can run at manageable spatial and memory scales.</p><code>01_extract_tiles.py</code></article>
+          <article class="card"><span class="card-index">03</span><h3>Candidate detection</h3><p>An AFB-trained YOLO checkpoint can score candidate bacilli. The local web app labels heuristic fallback explicitly.</p><code>models/yolo_detector.py</code></article>
+          <article class="card"><span class="card-index">04</span><h3>Post-processing</h3><p>Detections are filtered by confidence, class, morphology, and overlap before being translated to slide coordinates.</p><code>inference/postprocessor.py</code></article>
+          <article class="card"><span class="card-index">05</span><h3>Human review</h3><p>Candidate boxes remain research outputs for expert review, annotation, correction, and downstream validation.</p><code>static/annotate.html</code></article>
         </div>
-        <a class="button primary" href="https://github.com/abusuraihsakhri/tb_afb_detection">Open on GitHub</a>
       </div>
     </section>
+
+    <section class="section" id="architecture">
+      <div class="shell split">
+        <div><p class="eyebrow">Architecture</p><h2>What runs on GitHub Pages—and what does not</h2><p>GitHub Pages hosts this static demonstration because it is HTML, CSS, JavaScript, and Canvas only. The actual detection application stays local/server-side because it depends on PyTorch, Ultralytics, native OpenSlide libraries, model checkpoints, local files, and potentially very large WSIs.</p><p>This separation keeps the public project website lightweight while preserving the real research pipeline in the repository.</p></div>
+        <div class="architecture-stack">
+          <div class="architecture-item"><span>Public website</span><strong>GitHub Pages</strong><small>Interactive explanation, synthetic demonstration, architecture, limitations</small></div><div class="connector">↓</div>
+          <div class="architecture-item"><span>Local application</span><strong>FastAPI + browser UI</strong><small>Raster upload, annotation, reporting, WSI tile serving</small></div><div class="connector">↓</div>
+          <div class="architecture-item"><span>Research compute</span><strong>PyTorch + Ultralytics + OpenSlide</strong><small>Training, model inference, WSI traversal, candidate post-processing</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section muted" id="validation">
+      <div class="shell validation-grid">
+        <div><p class="eyebrow">Validation boundary</p><h2>Candidate detection is not a TB diagnosis</h2><p>The repository intentionally separates model-generated candidates from smear grading. Candidate counts are not automatically converted into a WHO/IUATLD grade. The grading utility is intended for confirmed microscopy counts with an appropriate examined-field protocol.</p></div>
+        <aside class="notice-card"><h3>Important limitations</h3><ul><li>No validated AFB-specific checkpoint is committed to the repository.</li><li>The included <code>yolov8n.pt</code> is generic initialization material, not a diagnostic model.</li><li>The Pages demonstration uses synthetic data and fixed illustrative scores.</li><li>Real WSI processing requires the local Python/OpenSlide environment.</li><li>Clinical deployment would require independent validation, governance, and regulatory review.</li></ul></aside>
+      </div>
+    </section>
+
+    <section class="section"><div class="shell callout"><div><p class="eyebrow">Run the real pipeline</p><h2>Inspect and execute the repository locally</h2><p>Source code, tests, security notes, launchers, Docker configuration, training, and inference workflows are available in the repository.</p></div><a class="button primary" href="https://github.com/abusuraihsakhri/tb_afb_detection">Open repository</a></div></section>
   </main>
 
-  <footer>
-    <div class="shell footer-grid">
-      <div>
-        <strong>TB AFB Detection</strong>
-        <p>Research toolkit for acid-fast bacilli candidate detection workflows.</p>
-      </div>
-      <div>
-        <a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/README.md">README</a>
-        <a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/SECURITY.md">Security</a>
-        <a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/LICENSE">License</a>
-      </div>
-    </div>
-  </footer>
+  <footer><div class="shell footer-grid"><div><strong>TB AFB Detection</strong><p>Interactive project website for a research-stage digital pathology toolkit.</p></div><div><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/README.md">README</a><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/SECURITY.md">Security</a><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/LICENSE">License</a></div></div></footer>
+  <script src="demo.js"></script>
 </body>
 </html>
