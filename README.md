@@ -1,5 +1,7 @@
 # TB AFB Detection
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/tb_afb_detection/)
+
 Research and development toolkit for tiled acid-fast bacilli (AFB) candidate detection in Ziehl-Neelsen microscopy images and whole-slide images.
 
 > **Research use only.** This repository is not a validated medical device and does not provide a diagnostic result. Model and heuristic detections are candidates that require expert review.
