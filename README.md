@@ -155,7 +155,7 @@ The UI is intended for current desktop versions of Chrome, Edge, Firefox, and Sa
 
 An interactive project website is provided under `docs/`. It demonstrates image loading, tiling, candidate scoring, confidence filtering, post-processing, and expert review using a deterministic synthetic microscopy field rendered with browser JavaScript and Canvas. No image is uploaded and no medical inference occurs on the Pages site.
 
-Publish the site from `main` → `/docs`. A root `index.html` redirect is also included so the project remains navigable if the repository root is selected as the publishing source.
+GitHub Pages is deployed by `.github/workflows/pages.yml` when `docs/` changes on `main`, or manually through `workflow_dispatch`. Repository Pages settings should use **Source: GitHub Actions**. The workflow validates the static assets, uploads `docs/` as the Pages artifact, and deploys it to the `github-pages` environment.
 
 The real computational application remains local/server-side. Its main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs, so it is not a practical fit for a static Pages/Pyodide deployment.
 
