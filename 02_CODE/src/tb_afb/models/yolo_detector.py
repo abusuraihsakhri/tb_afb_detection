@@ -7,14 +7,6 @@ import numpy as np
 class YOLOAFBDetector:
     """Small wrapper around Ultralytics YOLO used by training and inference."""
 
-    ANCHORS = [
-        [4, 16],
-        [6, 24],
-        [8, 32],
-        [4, 12],
-        [3, 20],
-    ]
-
     def __init__(self, model_size: str = "m", num_classes: int = 5, pretrained: bool = True):
         self.model_size = model_size
         self.num_classes = num_classes

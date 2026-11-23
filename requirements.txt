@@ -21,4 +21,4 @@ pyyaml==6.0.1
 python-multipart==0.0.32
 
 # PDF reporting
-fpdf2==2.8.1
+fpdf2==2.8.8
