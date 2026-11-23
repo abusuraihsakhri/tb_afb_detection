@@ -59,7 +59,7 @@ If no trained `best.pt` is present under `03_MODELS/` or `runs/`, the web applic
 
 ## Training
 
-Annotations saved by the local annotation tool are written to `01_DATA/processed_tiles/{train,val}` in normalized YOLO format.
+Annotations saved by the local annotation tool are written to `01_DATA/processed_tiles/{train,val}` in normalized YOLO format. The current tool assigns records to these splits without patient, specimen, or slide grouping. Treat them as development data only: review provenance, deduplicate, and create group-aware splits before reporting independent model performance.
 
 Run training from the repository root:
 
