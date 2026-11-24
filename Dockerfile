@@ -1,11 +1,11 @@
-FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip \
+    python3-venv \
     python3-dev \
     libgl1 \
     libglib2.0-0 \
@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
 
 WORKDIR /app
 

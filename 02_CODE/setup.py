@@ -15,6 +15,8 @@ setup(
         "ultralytics>=8.4,<9",
         "pydantic>=2.0,<3",
         "pyyaml>=6.0",
+        "Pillow>=13.0.0",
+        "filelock>=4.2.1",
     ],
-    python_requires=">=3.10",
+    python_requires=">=3.11",
 )

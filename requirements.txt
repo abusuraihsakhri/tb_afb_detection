@@ -22,3 +22,7 @@ python-multipart==0.0.32
 
 # PDF reporting
 fpdf2==2.8.8
+
+# Patched versions of dependencies used by PDF export and PyTorch
+Pillow==13.0.0
+filelock==4.2.1

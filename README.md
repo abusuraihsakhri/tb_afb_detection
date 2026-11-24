@@ -23,7 +23,7 @@ The included `yolov8n.pt` contains generic starting weights for training. To try
 
 ## Local web application
 
-Install Python dependencies:
+Use Python 3.11 or 3.12. Install the dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -147,7 +147,7 @@ In PowerShell, set `$env:PYTHONPATH = '02_CODE/src'` before running `python -m p
 
 The dataset integrity command checks both required train/validation splits, image-label pairing, non-empty image files, class IDs, normalized box sizes, and image-bound containment. It exits non-zero when a required check fails.
 
-GitHub Actions runs syntax checks, critical Ruff checks, and the core unit tests on Python 3.10 and 3.12.
+GitHub Actions runs syntax checks, critical Ruff checks, and the core unit tests on Python 3.11 and 3.12.
 
 ## Compatibility
 
