@@ -603,6 +603,11 @@ h3 {
   margin-bottom:10px
 }
 
+.companion-link {
+  color:var(--accent);
+  font-weight:700
+}
+
 .callout p:last-child {
   margin-bottom:0;
   color:var(--muted)
