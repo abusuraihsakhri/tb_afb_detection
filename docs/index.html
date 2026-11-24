@@ -6,7 +6,7 @@
   <meta name="description" content="Interactive project website for the TB AFB Detection research toolkit, demonstrating the microscopy and whole-slide candidate-detection workflow.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>TB AFB Detection — Interactive Project Demo</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -48,32 +48,22 @@
     <section class="section demo-section" id="demo">
       <div class="shell">
         <div class="section-heading">
-          <p class="eyebrow">Interactive demonstration</p>
           <h2>Try the detection demo</h2>
-          <p>The synthetic field is rendered entirely in your browser. Adjust the confidence threshold and run the demonstration to see which illustrative detections survive post-processing.</p>
+          <p>Set a confidence threshold and run the demo to see which simulated detections are retained.</p>
         </div>
         <div class="demo-layout">
           <section class="demo-controls" aria-label="Demo controls">
-            <div class="demo-badge">Illustrative browser simulation</div>
             <h3>Controls</h3>
             <label class="slider-label" for="threshold">Confidence threshold <output id="threshold-value" for="threshold">0.60</output></label>
             <input id="threshold" type="range" min="0.40" max="0.90" step="0.05" value="0.60">
             <div class="button-row">
-              <button class="button primary" id="run-demo" type="button">Run demonstration</button>
+              <button class="button primary" id="run-demo" type="button">Run demo</button>
               <button class="button secondary" id="reset-demo" type="button">Reset</button>
             </div>
-            <div class="stage-list" aria-label="Pipeline stages">
-              <div class="stage" data-stage="input"><span>1</span><div><strong>Load image</strong><small>Microscopy field selected</small></div></div>
-              <div class="stage" data-stage="tile"><span>2</span><div><strong>Tile field</strong><small>Regions prepared for inference</small></div></div>
-              <div class="stage" data-stage="detect"><span>3</span><div><strong>Detect candidates</strong><small>Illustrative scores generated</small></div></div>
-              <div class="stage" data-stage="post"><span>4</span><div><strong>Post-process</strong><small>Threshold + overlap filtering</small></div></div>
-              <div class="stage" data-stage="review"><span>5</span><div><strong>Review</strong><small>Candidate boxes presented</small></div></div>
-            </div>
-            <p class="demo-note">No image is uploaded and no medical inference occurs on this page. The real application runs locally through FastAPI, PyTorch/Ultralytics, and OpenSlide.</p>
           </section>
 
           <section class="demo-visual" aria-label="Synthetic microscopy demonstration">
-            <div class="viewer-bar"><div><strong>Synthetic Ziehl-Neelsen field</strong><span id="demo-status">Ready</span></div><span class="viewer-chip">browser-only</span></div>
+            <div class="viewer-bar"><div><strong>Synthetic Ziehl-Neelsen field</strong><span id="demo-status" role="status">Ready</span></div></div>
             <div class="canvas-wrap"><canvas id="demo-canvas" width="960" height="600" aria-label="Synthetic microscopy field with illustrative AFB candidate boxes"></canvas></div>
             <div class="demo-metrics" aria-live="polite">
               <article><span>Retained candidates</span><strong id="candidate-count">0</strong></article>
@@ -82,6 +72,13 @@
               <article><span>Output</span><strong>Expert review</strong></article>
             </div>
           </section>
+          <div class="stage-list" aria-label="Pipeline stages">
+            <div class="stage" data-stage="input"><span>1</span><div><strong>Load image</strong><small>Microscopy field selected</small></div></div>
+            <div class="stage" data-stage="tile"><span>2</span><div><strong>Tile field</strong><small>Regions prepared for inference</small></div></div>
+            <div class="stage" data-stage="detect"><span>3</span><div><strong>Detect candidates</strong><small>Illustrative scores generated</small></div></div>
+            <div class="stage" data-stage="post"><span>4</span><div><strong>Post-process</strong><small>Threshold + overlap filtering</small></div></div>
+            <div class="stage" data-stage="review"><span>5</span><div><strong>Review</strong><small>Candidate boxes presented</small></div></div>
+          </div>
         </div>
       </div>
     </section>
