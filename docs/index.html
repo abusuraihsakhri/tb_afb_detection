@@ -25,20 +25,20 @@
         <div>
           <p class="eyebrow">Digital pathology research toolkit</p>
           <h1>See how TB AFB candidate detection works</h1>
-          <p class="lede">This project website demonstrates the full workflow: microscopy or whole-slide input, tiling, candidate detection, post-processing, and expert review.</p>
+          <p class="lede">Use the simulated microscopy field below to see how a confidence threshold changes which candidate boxes are displayed.</p>
           <div class="actions">
             <a class="button primary" href="#demo">Run interactive demo</a>
             <a class="button secondary" href="https://github.com/abusuraihsakhri/tb_afb_detection">View source code</a>
           </div>
-          <p class="research-note"><strong>Research use only.</strong> The browser demo below is illustrative and does not run the trained Python/YOLO pipeline or provide a diagnostic result.</p>
+          <p class="research-note"><strong>Research use only.</strong> The demo uses simulated detections. Run the Python application locally to review your own images.</p>
         </div>
         <aside class="hero-panel" aria-label="Pipeline summary">
-          <div class="panel-label">PROJECT PIPELINE</div>
+          <div class="panel-label">LOCAL WORKFLOW</div>
           <div class="pipeline">
             <div class="pipeline-step"><span>01</span><div><strong>Input</strong><small>Microscopy raster or WSI</small></div></div>
             <div class="pipeline-step"><span>02</span><div><strong>Tile</strong><small>Fixed-size overlapping regions</small></div></div>
-            <div class="pipeline-step"><span>03</span><div><strong>Detect</strong><small>YOLO model or labeled heuristic fallback</small></div></div>
-            <div class="pipeline-step"><span>04</span><div><strong>Post-process</strong><small>Confidence filtering and global NMS</small></div></div>
+            <div class="pipeline-step"><span>03</span><div><strong>Detect</strong><small>Trained detector or color and shape rules</small></div></div>
+            <div class="pipeline-step"><span>04</span><div><strong>Post-process</strong><small>Filter weak scores and overlapping boxes</small></div></div>
             <div class="pipeline-step"><span>05</span><div><strong>Review</strong><small>Human inspection and annotation</small></div></div>
           </div>
         </aside>
@@ -49,7 +49,7 @@
       <div class="shell">
         <div class="section-heading">
           <p class="eyebrow">Interactive demonstration</p>
-          <h2>Explore the candidate-detection pipeline</h2>
+          <h2>Try the detection demo</h2>
           <p>The synthetic field is rendered entirely in your browser. Adjust the confidence threshold and run the demonstration to see which illustrative detections survive post-processing.</p>
         </div>
         <div class="demo-layout">
@@ -101,7 +101,7 @@
 
     <section class="section" id="architecture">
       <div class="shell split">
-        <div><p class="eyebrow">Architecture</p><h2>What runs on GitHub Pages—and what does not</h2><p>GitHub Pages hosts this static demonstration because it is HTML, CSS, JavaScript, and Canvas only. The actual detection application stays local/server-side because it depends on PyTorch, Ultralytics, native OpenSlide libraries, model checkpoints, local files, and potentially very large WSIs.</p><p>This separation keeps the public project website lightweight while preserving the real research pipeline in the repository.</p></div>
+        <div><p class="eyebrow">Architecture</p><h2>Running the toolkit locally</h2><p>GitHub Pages hosts this static demonstration because it is HTML, CSS, JavaScript, and Canvas only. The actual detection application stays local/server-side because it depends on PyTorch, Ultralytics, native OpenSlide libraries, model checkpoints, local files, and potentially very large WSIs.</p><p>See the repository README for installation and example commands.</p></div>
         <div class="architecture-stack">
           <div class="architecture-item"><span>Public website</span><strong>GitHub Pages</strong><small>Interactive explanation, synthetic demonstration, architecture, limitations</small></div><div class="connector">↓</div>
           <div class="architecture-item"><span>Local application</span><strong>FastAPI + browser UI</strong><small>Raster upload, annotation, reporting, WSI tile serving</small></div><div class="connector">↓</div>
@@ -117,7 +117,7 @@
       </div>
     </section>
 
-    <section class="section"><div class="shell callout"><div><p class="eyebrow">Run the real pipeline</p><h2>Inspect and execute the repository locally</h2><p>Source code, tests, security notes, launchers, Docker configuration, training, and inference workflows are available in the repository.</p></div><a class="button primary" href="https://github.com/abusuraihsakhri/tb_afb_detection">Open repository</a></div></section>
+    <section class="section"><div class="shell callout"><div><p class="eyebrow">Local setup</p><h2>Install the research toolkit</h2><p>Source code, tests, security notes, launchers, Docker configuration, training, and inference workflows are available in the repository.</p></div><a class="button primary" href="https://github.com/abusuraihsakhri/tb_afb_detection">Open repository</a></div></section>
   </main>
 
   <footer><div class="shell footer-grid"><div><strong>TB AFB Detection</strong><p>Interactive project website for a research-stage digital pathology toolkit.</p></div><div><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/README.md">README</a><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/SECURITY.md">Security</a><a href="https://github.com/abusuraihsakhri/tb_afb_detection/blob/main/LICENSE">License</a></div></div></footer>

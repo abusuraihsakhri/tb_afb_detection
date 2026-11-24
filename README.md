@@ -1,25 +1,25 @@
 # TB AFB Detection
 
-### [Open the Live Application →](https://abusuraihsakhri.github.io/tb_afb_detection/)
+[Open the browser demo](https://abusuraihsakhri.github.io/tb_afb_detection/)
 
-Research and development toolkit for tiled acid-fast bacilli (AFB) candidate detection in Ziehl-Neelsen microscopy images and whole-slide images.
+This toolkit lets you annotate Ziehl–Neelsen microscopy images, train a YOLO detector for acid-fast bacilli (AFB), and run it on microscopy images or supported whole-slide images (WSIs).
 
 > **Research use only.** This repository is not a validated medical device and does not provide a diagnostic result. Model and heuristic detections are candidates that require expert review.
 
-The `docs/` directory contains an interactive static project website that demonstrates the pipeline with a synthetic microscopy field, confidence-threshold controls, and candidate overlays. It is a browser-only explanation of the workflow, not model inference.
+The browser demo uses a simulated microscopy field to show how tiling and confidence filters affect the displayed candidates. Run the Python application locally to work with research images.
 
 ## What is included
 
-- Local FastAPI web application for raster-image screening and annotation.
+- Local FastAPI web application for reviewing and annotating microscopy images.
 - YOLO training workflow with CPU, CUDA, or Apple MPS device selection when supported by the installed PyTorch build.
 - OpenSlide-based WSI tiling and sliding-window inference for supported whole-slide formats.
-- AFB-focused postprocessing with global non-maximum suppression and morphology filters.
+- Post-processing with global non-maximum suppression and morphology filters.
 - Two-stain optical-density normalization using a Macenko-style method.
 - A standalone WHO/IUATLD smear-grading utility for **confirmed microscopy counts with a real examined-field protocol**.
 - Docker and Docker Compose runtime definitions.
 - Lightweight regression tests and GitHub Actions CI.
 
-The repository includes generic `yolov8n.pt` initialization weights. It does **not** include a validated AFB-specific trained checkpoint. Train a model and use the resulting `best.pt` for AFB inference.
+The included `yolov8n.pt` contains generic starting weights for training. To try an AFB-specific checkpoint, see the [pretrained model repository](https://github.com/abusuraihsakhri/pretrained-tb-afb-detection-model).
 
 ## Local web application
 
@@ -45,7 +45,7 @@ Then start the local API:
 python -m uvicorn 05_DEPLOYMENT.api.server:app --host 127.0.0.1 --port 8001
 ```
 
-Open `http://127.0.0.1:8001/ui/` for screening or `http://127.0.0.1:8001/ui/annotate.html` for annotation.
+Open `http://127.0.0.1:8001/ui/` to review detections or `http://127.0.0.1:8001/ui/annotate.html` for annotation.
 
 Windows users can use `Start_Detection_Engine.bat` or `Start_Annotation_Engine.bat`. macOS/Linux launchers are provided as `Start_Detection_Engine.sh` and `Start_Annotation_Engine.sh`.
 
@@ -53,9 +53,9 @@ Windows users can use `Start_Detection_Engine.bat` or `Start_Annotation_Engine.b
 
 The web endpoints accept raster files that OpenCV can decode: JPG, PNG, TIFF, and supported JPEG 2000 variants. The server enforces a 250 MB upload limit and a decoded-pixel limit.
 
-Large pyramidal WSI formats such as SVS, NDPI, MRXS, VMS/VMU, SCN, and BIF should use the local OpenSlide pipeline rather than the raster upload endpoint. DICOM is not implemented by the current web decoder.
+Use the command-line OpenSlide workflow for large pyramidal slides such as SVS, NDPI, MRXS, VMS/VMU, SCN, and BIF. DICOM is not implemented by the current web decoder.
 
-If no trained `best.pt` is present under `03_MODELS/` or `runs/`, the web application falls back to a simple color/morphology heuristic. That fallback is explicitly labeled as heuristic and must not be interpreted as a trained classifier.
+If no trained `best.pt` is present under `03_MODELS/` or `runs/`, the web application falls back to a rule based on color and shape. The interface labels these results as heuristic detections.
 
 ## Training
 
@@ -138,16 +138,18 @@ Lightweight checks do not require model downloads:
 
 ```bash
 python -m pip install -r requirements-dev.txt
-PYTHONPATH=02_CODE/src pytest -q
+PYTHONPATH=02_CODE/src python -m pytest -q
 python -m compileall -q 02_CODE 05_DEPLOYMENT/api
 python 02_CODE/scripts/check_data_integrity.py
 ```
+
+In PowerShell, set `$env:PYTHONPATH = '02_CODE/src'` before running `python -m pytest -q`.
 
 The dataset integrity command checks both required train/validation splits, image-label pairing, non-empty image files, class IDs, normalized box sizes, and image-bound containment. It exits non-zero when a required check fails.
 
 GitHub Actions runs syntax checks, critical Ruff checks, and the core unit tests on Python 3.10 and 3.12.
 
-## Technology and compatibility
+## Compatibility
 
 Core components are Python, PyTorch/Ultralytics, OpenCV, OpenSlide, FastAPI, NumPy, and fpdf2. The local UI uses standard HTML/CSS/JavaScript.
 
@@ -155,11 +157,7 @@ The UI is intended for current desktop versions of Chrome, Edge, Firefox, and Sa
 
 ## GitHub Pages project website
 
-An interactive project website is provided under `docs/`. It demonstrates image loading, tiling, candidate scoring, confidence filtering, post-processing, and expert review using a deterministic synthetic microscopy field rendered with browser JavaScript and Canvas. No image is uploaded and no medical inference occurs on the Pages site.
-
 GitHub Pages is deployed by `.github/workflows/pages.yml` when `docs/` changes on `main`, or manually through `workflow_dispatch`. Repository Pages settings should use **Source: GitHub Actions**. The workflow validates the static assets, uploads `docs/` as the Pages artifact, and deploys it to the `github-pages` environment.
-
-The real computational application remains local/server-side. Its main workflow requires a Python API process, native OpenSlide libraries, PyTorch/Ultralytics, local model files, and potentially very large WSIs, so it is not a practical fit for a static Pages/Pyodide deployment.
 
 ## License
 
