@@ -479,7 +479,7 @@ async def export_report(data: ReportRequest):
         ("Reviewer", data.pathologist_name),
     ]
     for label, value in rows:
-        pdf.multi_cell(0, 6, text=f"{label}: {_pdf_text(value)}")
+        pdf.multi_cell(0, 6, text=f"{label}: {_pdf_text(value)}", new_x="LMARGIN", new_y="NEXT")
 
     pdf.ln(8)
     pdf.set_font("Helvetica", "I", 8)
