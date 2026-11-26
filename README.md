@@ -159,6 +159,12 @@ The UI is intended for current desktop versions of Chrome, Edge, Firefox, and Sa
 
 GitHub Pages is deployed by `.github/workflows/pages.yml` when `docs/` changes on `main`, or manually through `workflow_dispatch`. Repository Pages settings should use **Source: GitHub Actions**. The workflow validates the static assets, uploads `docs/` as the Pages artifact, and deploys it to the `github-pages` environment.
 
+## Citation
+
+Sakhri, A. S. (2026). *TB-AFB Detection Toolkit* (version 48777f2fb8b7) [Computer software]. Zenodo. [10.5281/zenodo.24565627](https://doi.org/10.5281/zenodo.24565627).
+
+The Zenodo archive contains the cited source snapshot. Model weights are excluded.
+
 ## License
 
 The repository source is distributed under Apache License 2.0; see [LICENSE](LICENSE). Third-party dependencies and model artifacts retain their own licenses. In particular, Ultralytics currently offers its YOLO software/models under AGPL-3.0 or an Enterprise license, so deployments using Ultralytics must satisfy the applicable Ultralytics license terms.
